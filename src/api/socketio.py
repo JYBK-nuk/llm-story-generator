@@ -10,7 +10,7 @@ socket_manager = SocketManager(app=app)
 EventHandler = Callable[[dict[str, Any], Callable[[dict[str, Any]], Awaitable[None]]], Awaitable[None]]
 
 
-class CustomNamespace(AsyncNamespace):
+class DefaultNamespace(AsyncNamespace):
     def __init__(self, namespace: str | None = None) -> None:
         super().__init__(namespace)
         self.event_handlers: dict[str, EventHandler] = {}
@@ -30,5 +30,5 @@ class CustomNamespace(AsyncNamespace):
         return decorator
 
 
-custom_namespace = CustomNamespace(namespace="/ws")
-socket_manager._sio.register_namespace(custom_namespace)  # noqa: SLF001
+default_namespace = DefaultNamespace(namespace="/ws")
+socket_manager._sio.register_namespace(default_namespace)  # noqa: SLF001

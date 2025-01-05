@@ -1,10 +1,10 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from api.socketio import custom_namespace
+from api.socketio import default_namespace
 
 
-@custom_namespace.register_event("name")
+@default_namespace.register_event("name")
 async def handle_name_event(
     data: dict[str, Any],
     callback: Callable[[dict[str, Any]], Awaitable[None]],
@@ -14,7 +14,7 @@ async def handle_name_event(
     await callback(response)
 
 
-@custom_namespace.register_event("message")
+@default_namespace.register_event("message")
 async def handle_message_event(
     data: dict[str, Any],
     callback: Callable[[dict[str, Any]], Awaitable[None]],
