@@ -30,5 +30,5 @@ class DefaultNamespace(AsyncNamespace):
         return decorator
 
 
-default_namespace = DefaultNamespace(namespace="/ws")
+default_namespace = DefaultNamespace(namespace="/api/ws")
 socket_manager._sio.register_namespace(default_namespace)  # noqa: SLF001
