@@ -1,16 +1,16 @@
-
 <template>
   <div>
-    <input type="text" v-model="data.name" />
-    <button @click="methods.send">send</button>
+    <input type="text" v-model="data.name.value" />
+    <button @click="send">send</button>
   </div>
 </template>
-<script lang="ts">
-
+<script lang="ts" setup>
 const backend = useBackend();
 const data = {
-  name: ref(''),
-}
+  name: ref(""),
+};
 
 const send = () => {
+  backend.sendName(data.name.value);
 };
+</script>
