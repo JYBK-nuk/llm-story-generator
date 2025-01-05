@@ -1,0 +1,7 @@
+fastapi
+langchain
+pydantic
+uvicorn
+
+[dev]
+ruff
