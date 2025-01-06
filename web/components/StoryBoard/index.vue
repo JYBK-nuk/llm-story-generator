@@ -1,19 +1,45 @@
 <template>
-  <div v-if="currentStoryBoard" class="p-4 flex-col flex gap-3">
-    <StoryBoardSectionExtracted
+  <div
+    v-if="currentStoryBoard"
+    class="p-4 flex-col flex gap-5 overflow-y-auto h-full"
+  >
+    <div
+      class="opacity-70 text-sm font-bold"
       v-if="currentStoryBoard.dataExtracted"
-      v-model="currentStoryBoard.dataExtracted"
-    />
-
-    <StoryBoardSectionSearchResult
+    >
+      故事板
+    </div>
+    <div class="px-2">
+      <StoryBoardSectionExtracted
+        v-if="currentStoryBoard.dataExtracted"
+        v-model="currentStoryBoard.dataExtracted"
+      />
+    </div>
+    <div
+      class="opacity-70 text-sm font-bold"
       v-if="currentStoryBoard.searchResult"
-      v-model="currentStoryBoard.searchResult"
-    />
+    >
+      搜尋結果
+    </div>
+    <div class="px-2">
+      <StoryBoardSectionSearchResult
+        v-if="currentStoryBoard.searchResult"
+        v-model="currentStoryBoard.searchResult"
+      />
+    </div>
 
-    <StoryBoardSectionStoryResult
+    <div
+      class="opacity-70 text-sm font-bold"
       v-if="currentStoryBoard.storyResult"
-      v-model="currentStoryBoard.storyResult"
-    />
+    >
+      故事結果
+    </div>
+    <div class="px-2">
+      <StoryBoardSectionStoryResult
+        v-if="currentStoryBoard.storyResult"
+        v-model="currentStoryBoard.storyResult"
+      />
+    </div>
   </div>
 </template>
 

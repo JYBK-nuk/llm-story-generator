@@ -15,20 +15,29 @@
       class="flex gap-3 overflow-x-auto hide-scrollbar"
       ref="scrollContainer"
     >
-      <div
-        v-for="result in searchResult.data"
-        :key="result.title"
-        class="relative cursor-pointer min-w-250px overflow-hidden rounded-xl border border-gray-950/[.1] bg-gray-950/[.01] p-4 hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]"
-      >
-        <div class="flex flex-col">
-          <h3 class="text-sm font-medium dark:text-white">
-            {{ result.title }}
-          </h3>
-          <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1">
-            {{ result.description }}
-          </p>
-        </div>
-      </div>
+      <ClientOnly>
+        <IBlurReveal
+          v-for="(result, index) in searchResult.data"
+          :key="result.title"
+          :delay="0.2 * index"
+          :duration="0.75"
+        >
+          <div
+            class="relative cursor-pointer min-w-250px overflow-hidden rounded-xl border border-gray-950/[.1] bg-gray-950/[.01] p-4 hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]"
+          >
+            <div class="flex flex-col">
+              <h3 class="text-sm font-medium dark:text-white">
+                {{ result.title }}
+              </h3>
+              <p
+                class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1"
+              >
+                {{ result.description }}
+              </p>
+            </div>
+          </div>
+        </IBlurReveal>
+      </ClientOnly>
     </div>
 
     <!-- 右箭頭 -->

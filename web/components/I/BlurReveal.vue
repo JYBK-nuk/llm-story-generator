@@ -1,14 +1,12 @@
 <template>
   <div ref="container" :class="props.class">
     <div
-      v-for="(child, index) in children"
-      :key="index"
       ref="childElements"
       v-motion
       :initial="getInitial()"
-      :enter="getEnter(index)"
+      :enter="getEnter()"
     >
-      <component :is="child" />
+      <slot />
     </div>
   </div>
 </template>
@@ -56,7 +54,7 @@ function getInitial() {
   };
 }
 
-function getEnter(index: number) {
+function getEnter() {
   return {
     opacity: 1,
     filter: `blur(0px)`,
@@ -64,7 +62,7 @@ function getEnter(index: number) {
     transition: {
       duration: props.duration * 1000,
       easing: "easeInOut",
-      delay: props.delay * index * 1000,
+      delay: props.delay * 1000,
     },
   };
 }
