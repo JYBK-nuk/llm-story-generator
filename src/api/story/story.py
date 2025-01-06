@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterable
 
 import requests
 from dotenv import load_dotenv
@@ -263,7 +264,7 @@ Input: "{input_sentence}"
             raise Exception(f"Google Search API error: {response.text}")
 
         results = response.json()
-
+        extracted_results = []
         for item in results.get("items", []):
             title = item.get("title", "")
             snippet = item.get("snippet", "")
@@ -274,20 +275,20 @@ Input: "{input_sentence}"
             if "metatags" in pagemap:
                 metatags = pagemap.get("metatags", [{}])[0]
                 og_description = metatags.get("og:description", "")
-        extracted_results = []
-        extracted_results.append(
-            SearchResultData.model_validate(
-                {
-                    "title": title,
-                    "url": item.get("link", ""),
-                    "description": max(
-                        snippet,
-                        og_description,
-                        key=len,
-                    ),
-                },
-            ),
-        )
+
+            extracted_results.append(
+                SearchResultData.model_validate(
+                    {
+                        "title": title,
+                        "url": item.get("link", ""),
+                        "description": max(
+                            snippet,
+                            og_description,
+                            key=len,
+                        ),
+                    },
+                ),
+            )
 
         return extracted_results
 
@@ -331,11 +332,47 @@ class StoryCreator(BaseStoryProcessor):
     負責創建新故事的處理鏈
     """
 
+    def generate_title(
+        self,
+        details: DataExtractedData,
+        search_results: list[SearchResultData],
+    ) -> Iterable[str]:
+        """
+        生成故事標題
+        """
+
+        references = "\n".join(
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
+            for result in search_results
+        )
+
+        prompt = f"""
+Use the following information to write a story title
+- **Theme**: {details.theme}
+- **genre=**: {details.genre}
+- **Tone**: {details.tone}
+- **Key Elements**: {" ".join(details.key_elements)}
+- **References**:
+{references}
+
+### Rule:
+Use {details.language}
+
+### Instructions:
+1. Align with the theme and tone.
+2. Use key elements in the plot.
+3. Reference factual details but ensure originality.
+
+Generate the story title:
+"""
+        for chunk in self.llm.stream(prompt):
+            yield (chunk.content)
+
     def generate_story(
         self,
         details: DataExtractedData,
         search_results: list[SearchResultData],
-    ) -> StoryResultData:
+    ) -> Iterable[str]:
         """
         結合搜索結果生成故事
         """
@@ -363,8 +400,8 @@ Use {details.language}
 
 Generate the story:
 """
-
-        return self.llm.with_structured_output(StoryResultData).invoke(prompt)
+        for chunk in self.llm.stream(prompt):
+            yield (chunk.content)
 
 
 class StoryRevisor(BaseStoryProcessor):
@@ -413,27 +450,27 @@ if __name__ == "__main__":
     print(search_results)
 
     # 生成故事
-    generated_story = story_creator.generate_story(extracted_data)
-    print("生成的故事：")
-    print(generated_story)
+    generated_story = story_creator.generate_story(extracted_data, search_results)
+    # print("生成的故事：")
+    # print(generated_story)
 
-    # 測試生成故事圖片
-    print("\n===== 測試生成故事圖片 =====")
-    story_image_url = story_creator.generate_image(generated_story)
-    print(f"生成的圖片 URL: {story_image_url}")
+    # # 測試生成故事圖片
+    # print("\n===== 測試生成故事圖片 =====")
+    # story_image_url = story_creator.generate_image(generated_story)
+    # print(f"生成的圖片 URL: {story_image_url}")
 
-    # 測試修改故事
-    print("\n===== 測試修改故事 =====")
-    input_sentence = "希望故事中加入更多具體場景。"
-    feedback = story_revisor.determine_user_intent(input_sentence)
-    revised_story = story_revisor.revise_story(generated_story, feedback)
-    print("修改後的故事：")
-    print(revised_story)
+    # # 測試修改故事
+    # print("\n===== 測試修改故事 =====")
+    # input_sentence = "希望故事中加入更多具體場景。"
+    # feedback = story_revisor.determine_user_intent(input_sentence)
+    # revised_story = story_revisor.revise_story(generated_story, feedback)
+    # print("修改後的故事：")
+    # print(revised_story)
 
-    # 測試生成故事圖片
-    print("\n===== 測試生成故事圖片 =====")
-    story_image_url = story_creator.generate_image(revised_story)
-    print(f"生成的圖片 URL: {story_image_url}")
+    # # 測試生成故事圖片
+    # print("\n===== 測試生成故事圖片 =====")
+    # story_image_url = story_creator.generate_image(revised_story)
+    # print(f"生成的圖片 URL: {story_image_url}")
 
 # @router.post("/generate-story")
 # def generate_story(input_sentence: str) -> dict:

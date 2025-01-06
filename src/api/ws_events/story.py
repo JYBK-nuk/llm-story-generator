@@ -8,7 +8,13 @@ from langchain_openai import ChatOpenAI
 import utils.messages
 from api.socketio import ws
 from api.story.story import StoryCreator, StoryRevisor
-from models.chat_message import ChatMessage, DataExtracted, SearchResult, StoryResult
+from models.chat_message import (
+    ChatMessage,
+    DataExtracted,
+    SearchResult,
+    StoryResult,
+    StoryResultData,
+)
 from models.story_board import StoryBoard, StoryBoardUpdate
 
 load_dotenv()  # take environment variables from .env.
@@ -83,31 +89,58 @@ async def handle_message_event(
                 data=search_results,
             ),
         )
+        await callback(response.model_dump())
 
         # Step 3: 生成故事
-        generated_story = story_creator.generate_story(extracted_data, search_results)
+
+        # await sent_event(
+        #     "storyBoardUpdate",
+        #     StoryBoardUpdate(
+        #         title=generated_story.title,
+        #     ).model_dump(),
+        # )
+        title = ""
+        for worrd in story_creator.generate_title(extracted_data, search_results):
+            title += worrd
+            await sent_event(
+                "storyBoardUpdate",
+                StoryBoardUpdate(
+                    title=title,
+                ).model_dump(),
+            )
         response.steps.append(
             StoryResult(
-                data=generated_story,
+                data=StoryResultData(
+                    title=title,
+                    content="",
+                    image="",
+                ),
+            ),
+        )
+
+        content = ""
+        for word in story_creator.generate_story(extracted_data, search_results):
+            content += word
+            await sent_event(
+                "storyBoardUpdate",
+                StoryBoardUpdate(
+                    content=content,
+                ).model_dump(),
+            )
+
+        response.steps.append(
+            StoryResult(
+                data=StoryResultData(
+                    title=title,
+                    content=content,
+                    image="",
+                ),
             ),
         )
         await callback(response.model_dump())
-        await sent_event(
-            "storyBoardUpdate",
-            StoryBoardUpdate(
-                title=generated_story.title,
-            ).model_dump(),
-        )
-
-        await sent_event(
-            "storyBoardUpdate",
-            StoryBoardUpdate(
-                content=generated_story.content,
-            ).model_dump(),
-        )
 
         # Step 3: 為故事生成相關圖片
-        image_url = story_creator.generate_image(generated_story)
+        image_url = story_creator.generate_image(content)
         await sent_event(
             "storyBoardUpdate",
             StoryBoardUpdate(image=image_url).model_dump(),
