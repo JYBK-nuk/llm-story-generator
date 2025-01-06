@@ -11,6 +11,7 @@
               v-for="message in messages"
               :key="message.id + message.type"
               :message="message"
+              @switch-version="switchVersion"
             />
           </div>
         </div>
@@ -55,6 +56,10 @@ const send = async () => {
     messages: messages.value,
     currentStoryBoard: currentStoryBoard.value,
   });
+};
+
+const switchVersion = (storyResult: StoryResult) => {
+  currentStoryBoard.value.storyResult = storyResult;
 };
 
 backend.on.message((message) => {

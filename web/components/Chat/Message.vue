@@ -25,7 +25,13 @@
           "
         />
         <p>{{ statusText === "完成" ? storyTitle : statusText }}</p>
-        <div class="ml-auto" v-if="statusText == '完成'">切換到此版本</div>
+        <div
+          class="ml-auto cursor-pointer"
+          v-if="statusText == '完成'"
+          @click="switchVersion()"
+        >
+          切換到此版本
+        </div>
       </div>
     </div>
   </div>
@@ -63,6 +69,20 @@ const storyTitle = computed(() => {
   }
   return "";
 });
+
+const switchVersion = () => {
+  if (props.message.steps.length == 0) {
+    return;
+  }
+  const lastStep = props.message.steps[props.message.steps.length - 1];
+  if (lastStep.type === "storyResult") {
+    emits("switch-version", lastStep);
+  }
+};
+
+const emits = defineEmits<{
+  (e: "switch-version", payload: StoryResult): void;
+}>();
 </script>
 
 <style></style>
