@@ -46,7 +46,6 @@
 </template>
 
 <script lang="ts" setup>
-import { StoryBoardSectionImage } from "#build/components";
 import type {
   ChatMessage,
   StoryResult,
