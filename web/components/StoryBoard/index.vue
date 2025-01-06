@@ -34,10 +34,12 @@
     >
       故事結果
     </div>
-    <div class="px-2">
-      <StoryBoardSectionStoryResult
-        v-if="currentStoryBoard.storyResult"
-        v-model="currentStoryBoard.storyResult"
+    <div class="px-2" v-auto-animate v-if="currentStoryBoard.storyResult">
+      <StoryBoardSectionStoryResult v-model="currentStoryBoard.storyResult" />
+      {{ currentStoryBoard.storyResult.data }}
+      <StoryBoardSectionImage
+        v-if="currentStoryBoard.storyResult.data.image"
+        :url="currentStoryBoard.storyResult.data.image"
       />
     </div>
   </div>

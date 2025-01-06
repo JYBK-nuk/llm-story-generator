@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     "@nuxt/icon",
     "@primevue/nuxt-module",
     "@vueuse/motion/nuxt",
+    "@formkit/auto-animate/nuxt",
   ],
   css: ["@unocss/reset/tailwind-compat.css"],
   primevue: {
