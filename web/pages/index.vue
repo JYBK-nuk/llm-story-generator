@@ -58,8 +58,20 @@ const send = async () => {
   });
 };
 
-const switchVersion = (storyResult: StoryResult) => {
-  currentStoryBoard.value.storyResult = storyResult;
+const switchVersion = (
+  steps: (DataExtracted | SearchResult | StoryResult)[]
+) => {
+  for (const step of steps) {
+    if (step.type === "extracted") {
+      currentStoryBoard.value.dataExtracted = step;
+    }
+    if (step.type === "searchResult") {
+      currentStoryBoard.value.searchResult = step;
+    }
+    if (step.type === "storyResult") {
+      currentStoryBoard.value.storyResult = step;
+    }
+  }
 };
 
 backend.on.message((message) => {
