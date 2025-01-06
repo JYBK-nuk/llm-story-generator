@@ -27,31 +27,37 @@ def extract_story_details(input_sentence: str) -> dict:
     """
     prompt = f"""
 Extract the following details from the input sentence, and ensure the output uses the same language as the input:
-Theme: The main topic or subject.
-Genre: The type of story, e.g., Sci-fi, Fantasy, etc.
-Tone: The mood or attitude, e.g., Optimistic, Dark, etc.
-Key Elements: Any specific characters, locations, or plot points.
+Theme : The main topic or subject.
+Genre : The type of story, e.g., Sci-fi, Fantasy, etc.
+Tone : The mood or attitude, e.g., Optimistic, Dark, etc.
+Key Elements : Specific characters, locations, or plot points.
 
 Input: "{input_sentence}"
 Theme: [The main topic or subject.]
 Genre: [The type of story, e.g., Sci-fi, Fantasy, etc.]
 Tone: [The mood or attitude, e.g., Optimistic, Dark, etc.]
-Key Elements: [Specific characters, locations, or plot points.]
+Key Elements: [specific characters, locations, or plot points.] Elements separate by commas(,)
 Language: [The language of the input sentence.]
+
 """
     # 調用模型生成輸出
-    response = llm.invoke(prompt)
-
-    # 從 AIMessage 對象中提取文本
-    response_text = response.content  # 獲取 AIMessage 的文本內容
+    response = llm.invoke(prompt).content
 
     # 處理輸出為結構化數據
-    lines = response_text.strip().split("\n")
+    lines = response.strip().split("\n")
     details = {}
     for line in lines:
         if ": " in line:
             key, value = line.split(": ", 1)
             details[key.strip()] = value.strip()
+
+    if "Key Elements" in details:
+        key_elements = details["Key Elements"]
+        # 使用逗號或其他常見分隔符分割
+        details["Key Elements"] = [elem.strip() for elem in key_elements.split(",")]
+
+    print(f"Extracted details: {details}\n")
+
     return details
 
 
@@ -123,9 +129,8 @@ def generate_story_with_references(input_sentence: str) -> dict:
     """
     # 提取關鍵信息
     details = extract_story_details(input_sentence)
-    print(f"Extracted details: {details}\n")
     theme = details.get("Theme", "")
-    key_elements = details.get("Key Elements", "")
+    key_elements = " ".join(details.get("Key Elements", []))
 
     # Google 搜索
     query = f"{theme} {key_elements}"
@@ -213,7 +218,7 @@ def generate_image(story: str) -> str:
     """
     prompt = PromptTemplate(
         input_variables=["story"],
-        template="Create an image that represents the following story: {story}",
+        template="Summarize this story and generate a short image description that matches the story. : {story}",
     )
 
     image_pipeline = prompt | llm
@@ -232,12 +237,52 @@ if __name__ == "__main__":
     try:
         user_input = "一名科學家完成了一項AI實驗，造就了人類便利的未來。"
         intent = determine_user_intent(user_input)
+        print(f"User intent: {intent}\n")
+        if intent == "create":
+            story = generate_story_with_references(user_input)
+            generate_image(story)
 
-        user_input = "希望增加人類與AI合作的具體情節。"
-        intent = determine_user_intent(user_input)
+        # user_input = "希望增加人類與AI合作的具體情節。"
+        # intent = determine_user_intent(user_input)
 
     except Exception as e:
         print(e)
+
+
+@router.post("/generate-story")
+def generate_story(input_sentence: str) -> dict:
+    try:
+        story = generate_story_with_references(input_sentence)
+        return {"story": story}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.post("/revise-story")
+def revise_story(previous_story: str, feedback: str) -> dict:
+    try:
+        revised_story = revise_story_with_feedback(previous_story, feedback)
+        return {"revised_story": revised_story}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.post("/generate-image")
+def generate_image_endpoint(story: str) -> dict:
+    try:
+        image_url = generate_image(story)
+        return {"image_url": image_url}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.post("/determine-intent")
+def determine_intent(user_input: str) -> dict:
+    try:
+        intent = determine_user_intent(user_input)
+        return {"intent": intent}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # @router.post("/extract-keywords")
