@@ -7,8 +7,7 @@ from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-load_dotenv()
-
+load_dotenv()  # take environment variables from .env.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GOOGLE_CX = os.getenv("GOOGLE_CX")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
