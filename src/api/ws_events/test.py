@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Callable
+from pprint import pprint
 
 import utils.messages
 from api.socketio import ws
@@ -26,9 +27,11 @@ async def handle_message_event(data: dict, callback: Callable, sent_event: Calla
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
 
     # 訊息紀錄 裡面包含全部 (所以盡量只送 content 給使用者，steps 可能只有近期一兩個要送，也可都不送)
-    print(f"Messages: {messages}")
+    print("Messages:")
+    pprint(messages)
     # 左半邊目前的畫布 (真正給模型看現在文章內容及參考資料的)
-    print(f"Current Steps: {current_steps}")
+    print("Current steps:")
+    pprint(current_steps)
 
     if len(messages) == 0:
         return

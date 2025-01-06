@@ -16,7 +16,6 @@ class SocketServer:
             async def wrapped_function(sid: str, data: dict[str, Any]) -> None:
                 async def callback(response: dict[str, Any]) -> None:
                     # 發送回應給客戶端
-                    print(f"Sending response to event: {event} with data: {response} to sid: {sid}")
                     await self.sio.emit(event, response, to=sid)
 
                 async def sent_event(event: str, data: dict[str, Any]) -> None:
