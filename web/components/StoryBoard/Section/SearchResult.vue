@@ -26,14 +26,18 @@
             class="relative cursor-pointer min-w-250px overflow-hidden rounded-xl border border-gray-950/[.1] bg-gray-950/[.01] p-4 hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]"
           >
             <div class="flex flex-col">
-              <h3 class="text-sm font-medium dark:text-white">
-                {{ result.title }}
-              </h3>
-              <p
-                class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1"
-              >
-                {{ result.description }}
-              </p>
+              <NuxtLink target="_blank" :to="result.url">
+                <h3 class="text-md font-medium dark:text-white line-clamp-1">
+                  {{ result.title }}
+                </h3>
+              </NuxtLink>
+              <div class="max-h-20 overflow-hidden">
+                <p
+                  class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1 line-clamp-2"
+                >
+                  {{ result.description }}
+                </p>
+              </div>
             </div>
           </div>
         </IBlurReveal>

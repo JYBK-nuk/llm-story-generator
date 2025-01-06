@@ -24,9 +24,11 @@
               : 'line-md:loading-twotone-loop'
           "
         />
-        <p>{{ statusText === "完成" ? storyTitle : statusText }}</p>
+        <p class="line-clamp-1">
+          {{ statusText === "完成" ? storyTitle : statusText }}
+        </p>
         <div
-          class="ml-auto cursor-pointer"
+          class="ml-auto cursor-pointer text-nowrap hover:underline"
           v-if="statusText == '完成'"
           @click="switchVersion()"
         >
@@ -38,7 +40,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { ChatMessage, StoryResult } from "~/type/ChatMessage.type";
+import type {
+  ChatMessage,
+  DataExtracted,
+  SearchResult,
+  StoryResult,
+} from "~/type/ChatMessage.type";
 
 const props = defineProps<{
   message: ChatMessage;
@@ -74,14 +81,14 @@ const switchVersion = () => {
   if (props.message.steps.length == 0) {
     return;
   }
-  const lastStep = props.message.steps[props.message.steps.length - 1];
-  if (lastStep.type === "storyResult") {
-    emits("switch-version", lastStep);
-  }
+  emits("switch-version", props.message.steps);
 };
 
 const emits = defineEmits<{
-  (e: "switch-version", payload: StoryResult): void;
+  (
+    e: "switch-version",
+    payload: (DataExtracted | SearchResult | StoryResult)[]
+  ): void;
 }>();
 </script>
 
