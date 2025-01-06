@@ -3,22 +3,39 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
+    "build": "nuxt build --cwd=web",
     "dev": "concurrently \"pnpm dev:nuxt\" \"pnpm dev:python\"",
-    "dev:nuxt": "nuxt dev",
+    "dev:nuxt": "nuxt dev --cwd=web --tunnel",
     "dev:python": "uv run src/app.py",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "generate": "nuxt generate --cwd=web",
+    "preview": "nuxt preview --cwd=web",
+    "postinstall": "nuxt prepare --cwd=web"
   },
   "dependencies": {
+    "@nuxt/icon": "1.10.3",
+    "@nuxtjs/color-mode": "3.5.2",
+    "@pinia/nuxt": "0.9.0",
+    "@primevue/themes": "^4.2.5",
+    "@vueuse/core": "^12.3.0",
+    "@vueuse/motion": "^2.2.6",
+    "@vueuse/nuxt": "12.3.0",
+    "httpxy": "^0.1.5",
     "nuxt": "^3.15.1",
+    "pinia": "^2.3.0",
+    "primevue": "^4.2.5",
     "socket.io-client": "^4.8.1",
+    "tailwind-merge": "^2.6.0",
     "vue": "latest",
     "vue-router": "latest"
   },
   "packageManager": "pnpm@9.9.0+sha512.60c18acd138bff695d339be6ad13f7e936eea6745660d4cc4a776d5247c540d0edee1a563695c183a66eb917ef88f2b4feb1fc25f32a7adcadc7aaf3438e99c1",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@inspira-ui/plugins": "^0.0.1",
+    "@primevue/nuxt-module": "^4.2.5",
+    "@unocss/nuxt": "^0.65.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.1.2",
+    "unocss": "^0.65.3"
   }
 }

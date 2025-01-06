@@ -1,34 +1,33 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from fastapi_socketio import SocketManager
-from socketio import AsyncNamespace
+import socketio
 
-from app import app
-
-socket_manager = SocketManager(app=app)
+# 定義事件處理器的類型
 EventHandler = Callable[[dict[str, Any], Callable[[dict[str, Any]], Awaitable[None]]], Awaitable[None]]
 
 
-class DefaultNamespace(AsyncNamespace):
-    def __init__(self, namespace: str | None = None) -> None:
-        super().__init__(namespace)
-        self.event_handlers: dict[str, EventHandler] = {}
+class SocketServer:
+    def __init__(self) -> None:
+        self.sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 
     def register_event(self, event: str) -> Callable[[EventHandler], EventHandler]:
         def decorator(func: EventHandler) -> EventHandler:
             async def wrapped_function(sid: str, data: dict[str, Any]) -> None:
                 async def callback(response: dict[str, Any]) -> None:
-                    await self.emit(event, response, to=sid)
+                    # 發送回應給客戶端
+                    print(f"Sending response to event: {event} with data: {response} to sid: {sid}")
+                    await self.sio.emit(event, response, to=sid)
 
                 await func(data, callback)
 
-            self.event_handlers[event] = wrapped_function
-            self.on(event, wrapped_function)
+            # 註冊事件
+            print(f"Registering event: {event}")
+            self.sio.on(event, wrapped_function)
             return func
 
         return decorator
 
 
-default_namespace = DefaultNamespace(namespace="/api/ws")
-socket_manager._sio.register_namespace(default_namespace)  # noqa: SLF001
+# 實例化 SocketServer
+ws = SocketServer()

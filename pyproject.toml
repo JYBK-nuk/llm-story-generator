@@ -5,11 +5,9 @@ description = ""
 requires-python = "==3.12.4"
 dependencies = [
     "fastapi",
-    "fastapi-socketio>=0.0.10",
     "langchain",
     "pydantic",
     "python-socketio>=5.12.1",
-    "starlette>=0.41.3",
     "uvicorn",
 ]
 
