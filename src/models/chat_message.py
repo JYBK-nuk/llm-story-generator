@@ -1,13 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # Model for DataExtracted's `data` field
 class DataExtractedData(BaseModel):
-    theme: str
-    genre: str
-    tone: str
-    key_elements: list[str]
-    language: str
+    theme: str = Field(description="The main topic or subject")
+    genre: str = Field(description="The type of story, e.g., Sci-fi, Fantasy, etc")
+    tone: str = Field(description="The mood or attitude, e.g., Optimistic, Dark, etc")
+    key_elements: list[str] = Field(
+        description="Specific characters, locations, or plot points",
+    )
+    language: str = Field(description="The language of the input sentence")
 
 
 # Model for SearchResult's `data` field
@@ -19,9 +21,9 @@ class SearchResultData(BaseModel):
 
 # Model for StoryResult's `data` field
 class StoryResultData(BaseModel):
-    title: str
-    content: str
-    image: str
+    title: str = Field(description="The title of the story")
+    content: str = Field(description="The generated story content")
+    image: str = ""
 
 
 # Define the step models
