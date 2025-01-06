@@ -1,9 +1,12 @@
+import socketio
 from fastapi import FastAPI
 
 from api import api_router
+from api.socketio import ws
 
 app = FastAPI()
 
+app.mount("/socket.io", socketio.ASGIApp(ws.sio))
 app.include_router(router=api_router)
 
 
