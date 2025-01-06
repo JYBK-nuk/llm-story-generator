@@ -7,6 +7,11 @@ from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
+from models.chat_message import (
+    DataExtractedData,
+    StoryResultData,
+)
+
 load_dotenv()  # take environment variables from .env.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GOOGLE_CX = os.getenv("GOOGLE_CX")
@@ -21,44 +26,20 @@ llm = ChatOpenAI(
 )
 
 
-def extract_story_details(input_sentence: str) -> dict:
+def extract_story_details(input_sentence: str) -> DataExtractedData:
     """
     使用語言模型從用戶輸入中提取主題、類型、語氣和關鍵要素
     """
     prompt = f"""
 Extract the following details from the input sentence, and ensure the output uses the same language as the input:
-Theme : The main topic or subject.
-Genre : The type of story, e.g., Sci-fi, Fantasy, etc.
-Tone : The mood or attitude, e.g., Optimistic, Dark, etc.
-Key Elements : Specific characters, locations, or plot points.
 
 Input: "{input_sentence}"
-Theme: [The main topic or subject.]
-Genre: [The type of story, e.g., Sci-fi, Fantasy, etc.]
-Tone: [The mood or attitude, e.g., Optimistic, Dark, etc.]
-Key Elements: [specific characters, locations, or plot points.] Elements separate by commas(,)
-Language: [The language of the input sentence.]
-
 """
     # 調用模型生成輸出
-    response = llm.invoke(prompt).content
+    response = llm.with_structured_output(DataExtractedData).invoke(prompt)
 
-    # 處理輸出為結構化數據
-    lines = response.strip().split("\n")
-    details = {}
-    for line in lines:
-        if ": " in line:
-            key, value = line.split(": ", 1)
-            details[key.strip()] = value.strip()
-
-    if "Key Elements" in details:
-        key_elements = details["Key Elements"]
-        # 使用逗號或其他常見分隔符分割
-        details["Key Elements"] = [elem.strip() for elem in key_elements.split(",")]
-
-    print(f"Extracted details: {details}\n")
-
-    return details
+    print(f"Extracted details: {response}\n")
+    return response
 
 
 def google_search(query: str, num_results: int = 5) -> list:
@@ -129,11 +110,10 @@ def generate_story_with_references(input_sentence: str) -> dict:
     """
     # 提取關鍵信息
     details = extract_story_details(input_sentence)
-    theme = details.get("Theme", "")
-    key_elements = " ".join(details.get("Key Elements", []))
+    key_elements = " ".join(details.key_elements)
 
     # Google 搜索
-    query = f"{theme} {key_elements}"
+    query = f"{details.theme} {key_elements}"
     print(f"Google search query: {query}\n")
     search_results = google_search(query)
     print(f"Google search results: {search_results}\n")
@@ -147,15 +127,15 @@ def generate_story_with_references(input_sentence: str) -> dict:
 
     # 故事生成提示
     prompt = f"""
-Use the following information to write a compelling {details.get("Genre", "story")} :
-- **Theme**: {theme}
-- **Tone**: {details.get("Tone", "neutral")}
+Use the following information to write a compelling {details.genre}:
+- **Theme**: {details.theme}
+- **Tone**: {details.tone}
 - **Key Elements**: {key_elements}
 - **References**:
 {references}
 
 ### Rule:
-Use {details.get("Language", "the same language as the input")}
+Use {details.language}
 
 ### Instructions:
 1. Ensure the story aligns with the specified theme and tone.
@@ -165,8 +145,7 @@ Use {details.get("Language", "the same language as the input")}
 Now, craft the story:
 """
 
-    # 使用 LLM 生成故事
-    story = llm.invoke(prompt).content
+    story = llm.with_structured_output(StoryResultData).invoke(prompt)
     print(f"Generated story:\n{story}\n")
     return story
 
@@ -238,9 +217,11 @@ if __name__ == "__main__":
         user_input = "一名科學家完成了一項AI實驗，造就了人類便利的未來。"
         intent = determine_user_intent(user_input)
         print(f"User intent: {intent}\n")
-        if intent == "create":
-            story = generate_story_with_references(user_input)
-            generate_image(story)
+        generate_story_with_references(user_input)
+        # print(f"User intent: {intent}\n")
+        # if intent == "create":
+        #     story = generate_story_with_references(user_input)
+        #     generate_image(story)
 
         # user_input = "希望增加人類與AI合作的具體情節。"
         # intent = determine_user_intent(user_input)
@@ -283,23 +264,3 @@ def determine_intent(user_input: str) -> dict:
         return {"intent": intent}
     except Exception as e:
         return {"error": str(e)}
-
-
-# @router.post("/extract-keywords")
-# def extract_keywords(input_sentence: str) -> dict:
-#     """
-#     提取故事的關鍵元素
-#     """
-#     return extract_story_details(input_sentence)
-
-
-# @router.post("/google-search")
-# def search_google(query: str) -> dict:
-#     """
-#     使用 Google API 搜索內容並返回結果
-#     """
-#     try:
-#         results = google_search(query)
-#         return {"results": results}  # 將列表封裝在字典中
-#     except Exception as e:
-#         return {"error": str(e)}

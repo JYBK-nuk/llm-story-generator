@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.langchain.story import router as story_router
+from api.story.story import router as story_router
 from .ws_events import *
 
 api_router = APIRouter(
