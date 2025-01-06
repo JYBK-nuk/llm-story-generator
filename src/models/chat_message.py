@@ -24,6 +24,7 @@ class StoryResultData(BaseModel):
     title: str = Field(description="The title of the story")
     content: str = Field(description="The generated story content")
     image: str = ""
+    image_prompt: str = ""
 
 
 # Define the step models

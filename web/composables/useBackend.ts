@@ -64,6 +64,7 @@ export const useBackend = () => {
         content: string;
         title: string;
         image: string;
+        image_prompt: string;
       }) => void
     ) => {
       events.storyBoardUpdate = callback;

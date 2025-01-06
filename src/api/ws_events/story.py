@@ -125,10 +125,10 @@ User Input: "{user_input}"
             )
 
         # Step 3: 為故事生成相關圖片
-        image_url = story_creator.generate_image(content)
+        image_url, image_prompt = story_creator.generate_image(content)
         await sent_event(
             "storyBoardUpdate",
-            StoryBoardUpdate(image=image_url).model_dump(),
+            StoryBoardUpdate(image=image_url, image_prompt=image_prompt).model_dump(),
         )
 
         response.steps.append(
@@ -137,6 +137,7 @@ User Input: "{user_input}"
                     title=title,
                     content=content,
                     image=image_url,
+                    image_prompt=image_prompt,
                 ),
             ),
         )
@@ -156,10 +157,10 @@ User Input: "{user_input}"
                 StoryBoardUpdate(content=revised_story).model_dump(),
             )
 
-        revised_img_url = story_creator.generate_image(revised_story)
+        revised_img_url, image_prompt = story_creator.generate_image(revised_story)
         await sent_event(
             "storyBoardUpdate",
-            StoryBoardUpdate(image=revised_img_url).model_dump(),
+            StoryBoardUpdate(image=revised_img_url, image_prompt=image_prompt).model_dump(),
         )
 
         # 最終回應
@@ -169,6 +170,7 @@ User Input: "{user_input}"
                     title=current_storyboard.story_result.data.title,
                     content=revised_story,
                     image=revised_img_url,
+                    image_prompt=image_prompt,
                 ),
             ),
         )

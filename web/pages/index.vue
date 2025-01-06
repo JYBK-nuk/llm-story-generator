@@ -120,6 +120,10 @@ backend.on.storyBoardUpdate((storyBoard) => {
         storyBoard.image ||
         currentStoryBoard.value.storyResult?.data.image ||
         "",
+      image_prompt:
+        storyBoard.image_prompt ||
+        currentStoryBoard.value.storyResult?.data.image_prompt ||
+        "",
     },
   };
 });

@@ -31,5 +31,6 @@ export interface StoryResult {
     title: string;
     content: string;
     image: string;
+    image_prompt: string;
   };
 }

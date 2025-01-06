@@ -24,6 +24,41 @@ llm = ChatOpenAI(
 )
 
 
+prompts = {
+    "image_generation": """
+Generate prompts for image generation with DALL·E 3 based on the following rules:
+
+- Each prompt should describe a clear visual scene with specific details.
+- Focus on tangible elements like setting, characters, colors, lighting, and composition.
+- Use modifiers to adjust the mood, style, and atmosphere of the scene.
+- Avoid abstract or emotional language, and keep the prompt concise.
+- Prompt should always be written in English, regardless of the input language. Please provide the prompts in English.
+- Each prompt should consist of a description of the scene followed by modifiers divided by commas.
+- When generating descriptions, focus on portraying the visual elements rather than delving into abstract psychological and emotional aspects. Provide clear and concise details that vividly depict the scene and its composition, capturing the tangible elements that make up the setting.
+- The modifiers should alter the mood, style, lighting, and other aspects of the scene.
+- Multiple modifiers can be used to provide more specific details.
+
+Example:
+
+1. A ghostly figure drifting through an eerie, candlelit ballroom, with shadows cast on the walls.
+2. A fantasy archer with Homer Simpson’s face, shooting arrows at a forest monster in a dark, cinematic style.
+3. A pirate standing on a stormy ship deck, sharp details, dramatic lighting, and vivid colors.
+4. A Western cinematic scene with god rays and dramatic clouds, inspired by Red Dead Redemption 2.
+5. Portrait of a woman in bronze armor with an owl crown, in a fantasy RPG style with sharp focus and heroic lighting.
+6. Close-up of a biomechanical female warrior in a futuristic sci-fi environment, sleek lines, high-tech details.
+7. Ultra-realistic portrait of Steve Urkel transformed into the Hulk, with intense details and smooth textures.
+8. A vibrant anime-style portrait of Ana de Armas, with soft lines, bright colors, and sharp focus.
+9. A surreal scene with tropical fruits on a table, with water droplets, abstract background, and bright lighting.
+10. A magical hourglass with sand spilling out, glowing particles, and a mystical nebula background.
+11. Geometric, colorful background with a woman at the center, glowing skin, dynamic angles, and zentangle patterns.
+
+I want you to write me **a** prompt for generating an image based on the following story:
+
+STORY: {story}
+""",
+}
+
+
 class BaseStoryProcessor:
     """
     基底類別，封裝共用的故事處理功能
@@ -106,20 +141,20 @@ Input: "{input_sentence}"
 
         return extracted_results
 
-    def generate_image(self, story: str) -> str:
+    def generate_image(self, story: str) -> tuple[str, str]:
         """
         為故事生成相關圖片
         """
         prompt = PromptTemplate(
             input_variables=["story"],
-            template="Generate a short image description(the length must be less than 1000) for the following story: {story}",
+            template=prompts["image_generation"],
         )
         image_pipeline = prompt | llm
         image_description = image_pipeline.invoke({"story": story}).content
-
+        print("Image Description: ", image_description)
         dalle_wrapper = DallEAPIWrapper()
 
-        return dalle_wrapper.run(image_description)
+        return dalle_wrapper.run(image_description), image_description
 
     def determine_user_intent(self, user_input: str) -> str:
         """
@@ -156,8 +191,7 @@ class StoryCreator(BaseStoryProcessor):
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
-            for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
         )
 
         prompt = f"""
@@ -193,8 +227,7 @@ Generate the story title:
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
-            for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
         )
 
         prompt = f"""
@@ -256,9 +289,7 @@ if __name__ == "__main__":
 
     # 測試創建新故事
     print("===== 測試創建新故事 =====")
-    input_sentence = (
-        "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
-    )
+    input_sentence = "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
 
     # 提取故事細節
     extracted_data = story_creator.extract_story_details(input_sentence)
@@ -277,7 +308,7 @@ if __name__ == "__main__":
 
     # # 測試生成故事圖片
     # print("\n===== 測試生成故事圖片 =====")
-    # story_image_url = story_creator.generate_image(generated_story)
+    # story_image_url, _ = story_creator.generate_image(generated_story)
     # print(f"生成的圖片 URL: {story_image_url}")
 
     # # 測試修改故事
@@ -290,5 +321,5 @@ if __name__ == "__main__":
 
     # # 測試生成故事圖片
     # print("\n===== 測試生成故事圖片 =====")
-    # story_image_url = story_creator.generate_image(revised_story)
+    # story_image_url, _ = story_creator.generate_image(revised_story)
     # print(f"生成的圖片 URL: {story_image_url}")

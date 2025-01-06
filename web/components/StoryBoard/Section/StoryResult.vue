@@ -10,6 +10,7 @@
             <StoryBoardSectionImage
               class="shadow-sm rounded-lg overflow-hidden"
               :url="storyResult.data.image"
+              :prompt="storyResult.data.image_prompt"
             />
           </IBlurReveal>
         </ClientOnly>
