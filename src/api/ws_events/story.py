@@ -168,6 +168,8 @@ User Input: "{user_input}"
                 StoryBoardUpdate(content=revised_story).model_dump(),
             )
 
+        await callback(response.model_dump())
+
         revised_img_url = story_creator.generate_image(revised_story)
         await sent_event(
             "storyBoardUpdate",

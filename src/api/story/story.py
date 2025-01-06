@@ -112,7 +112,7 @@ Input: "{input_sentence}"
         """
         prompt = PromptTemplate(
             input_variables=["story"],
-            template="Generate a short image description(the length must be less than 1000) for the following story: {story}",
+            template="Create a short and precise image description in under 1000 characters. Ensure the description captures the essence of the scene, including key visual details like characters, actions, settings, and any emotions or moods conveyed. Use concise language, avoiding repetition or irrelevant details.Based on the following story : {story}",
         )
         image_pipeline = prompt | llm
         image_description = image_pipeline.invoke({"story": story}).content
@@ -206,7 +206,7 @@ Use the following information to write a compelling {details.genre}:
 {references}
 
 ### Rule:
-Use {details.language}.
+Use {details.language}
 Only include the story content.
 
 ### Instructions:
@@ -233,7 +233,7 @@ class StoryRevisor(BaseStoryProcessor):
 The user provided feedback to revise the following story:
 
 ### Rule:
-Use the same language as the original story.
+Use the same language as the original story, unless the feedback suggests otherwise.
 Only include the story content.
 
 ### Story:
