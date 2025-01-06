@@ -58,6 +58,15 @@ export const useBackend = () => {
     message: (callback: (message: ChatMessage) => void) => {
       events.message = callback;
     },
+    storyBoardUpdate: (
+      callback: (data: {
+        content: string;
+        title: string;
+        image: string;
+      }) => void
+    ) => {
+      events.storyBoardUpdate = callback;
+    },
   };
 
   return {

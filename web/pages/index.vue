@@ -78,6 +78,26 @@ backend.on.message((message) => {
     }
   });
 });
+
+backend.on.storyBoardUpdate((storyBoard) => {
+  currentStoryBoard.value.storyResult = {
+    type: "storyResult",
+    data: {
+      title:
+        storyBoard.title ||
+        currentStoryBoard.value.storyResult?.data.title ||
+        "",
+      content:
+        storyBoard.content ||
+        currentStoryBoard.value.storyResult?.data.content ||
+        "",
+      image:
+        storyBoard.image ||
+        currentStoryBoard.value.storyResult?.data.image ||
+        "",
+    },
+  };
+});
 </script>
 
 <style>

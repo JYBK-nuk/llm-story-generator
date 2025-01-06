@@ -19,7 +19,6 @@ from models.story_board import StoryBoard, StoryBoardUpdate
 @ws.register_event("message")
 async def handle_message_event(data: dict, callback: Callable, sent_event: Callable) -> None:
     current_storyboard = StoryBoard.model_validate(data.get("currentStoryBoard", {}))
-
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
 
     # 訊息紀錄 裡面包含全部 (所以盡量只送 content 給使用者，steps 可能只有近期一兩個要送，也可都不送)
