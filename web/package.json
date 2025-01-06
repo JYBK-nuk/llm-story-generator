@@ -8,3 +8,8 @@
 		"lucide-vue-next": "^0.469.0"
 	}
 }
+{
+	"dependencies": {
+		"shadcn-vue": "^0.11.3"
+	}
+}

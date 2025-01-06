@@ -1,6 +1,6 @@
 <template>
   <Splitter class="h-dvh">
-    <SplitterPanel class="flex items-center justify-center" :minSize="20">
+    <SplitterPanel :minSize="20">
       <StoryBoard v-model="currentStoryBoard" />
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
@@ -11,6 +11,7 @@
               v-for="message in messages"
               :key="message.id + message.type"
               :message="message"
+              @switch-version="switchVersion"
             />
           </div>
         </div>
@@ -55,6 +56,10 @@ const send = async () => {
     messages: messages.value,
     currentStoryBoard: currentStoryBoard.value,
   });
+};
+
+const switchVersion = (storyResult: StoryResult) => {
+  currentStoryBoard.value.storyResult = storyResult;
 };
 
 backend.on.message((message) => {
