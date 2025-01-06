@@ -124,22 +124,6 @@ User Input: "{user_input}"
                 ).model_dump(),
             )
 
-        response.steps.append(
-            StoryResult(
-                data=StoryResultData(
-                    title=title,
-                    content=content,
-                    image="",
-                ),
-            ),
-        )
-
-        current_storyboard.story_result = StoryResultData(
-            title=title,
-            content=content,
-            image="",
-        )
-
         # Step 3: 為故事生成相關圖片
         image_url = story_creator.generate_image(content)
         await sent_event(
@@ -147,14 +131,18 @@ User Input: "{user_input}"
             StoryBoardUpdate(image=image_url).model_dump(),
         )
 
-        await callback(response.model_dump())
-        current_storyboard.story_result = StoryResultData(
-            title=title,
-            content=content,
-            image=image_url,
+        response.steps.append(
+            StoryResult(
+                data=StoryResultData(
+                    title=title,
+                    content=content,
+                    image=image_url,
+                ),
+            ),
         )
-    elif intent == "feedback":
+        await callback(response.model_dump())
 
+    elif intent == "feedback":
         # Step 1: 修訂現有故事
         feedback = user_input
         previous_story = current_storyboard.story_result  # 從當前故事板獲取舊故事

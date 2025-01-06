@@ -61,17 +61,25 @@ const send = async () => {
 const switchVersion = (
   steps: (DataExtracted | SearchResult | StoryResult)[]
 ) => {
-  for (const step of steps) {
-    if (step.type === "extracted") {
-      currentStoryBoard.value.dataExtracted = step;
+  currentStoryBoard.value = {
+    id: "",
+    dataExtracted: null,
+    searchResult: null,
+    storyResult: null,
+  };
+  nextTick(() => {
+    for (const step of steps) {
+      if (step.type === "extracted") {
+        currentStoryBoard.value.dataExtracted = step;
+      }
+      if (step.type === "searchResult") {
+        currentStoryBoard.value.searchResult = step;
+      }
+      if (step.type === "storyResult") {
+        currentStoryBoard.value.storyResult = step;
+      }
     }
-    if (step.type === "searchResult") {
-      currentStoryBoard.value.searchResult = step;
-    }
-    if (step.type === "storyResult") {
-      currentStoryBoard.value.storyResult = step;
-    }
-  }
+  });
 };
 
 backend.on.message((message) => {

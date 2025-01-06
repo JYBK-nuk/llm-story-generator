@@ -17,13 +17,15 @@
         class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2"
         v-if="message.steps.length"
       >
-        <Icon
-          :name="
-            statusText == '完成'
-              ? 'line-md:circle-twotone-to-confirm-circle-transition'
-              : 'line-md:loading-twotone-loop'
-          "
-        />
+        <div class="flex items-center">
+          <Icon
+            :name="
+              statusText == '完成'
+                ? 'line-md:circle-twotone-to-confirm-circle-transition'
+                : 'line-md:loading-twotone-loop'
+            "
+          />
+        </div>
         <p class="line-clamp-1">
           {{ statusText === "完成" ? storyTitle : statusText }}
         </p>

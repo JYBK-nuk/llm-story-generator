@@ -1,7 +1,11 @@
 <template>
   <div class="p-3 w-full flex gap-2 mt-auto">
     <div class="w-full">
-      <IInput v-model="input" placeholder="輸入你想要的故事" />
+      <IInput
+        v-model="input"
+        placeholder="輸入你想要的故事"
+        @keydown.enter="sendMessage"
+      />
     </div>
     <div class="flex">
       <IButton @click="sendMessage">
