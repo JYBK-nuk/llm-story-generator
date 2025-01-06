@@ -1,6 +1,8 @@
 <template>
   <div v-if="storyResult" class="flex flex-col gap-3">
-    <div class="font-bold text-lg">{{ storyResult.data.title }}</div>
+    <div class="font-bold text-3xl text-center">
+      {{ storyResult.data.title }}
+    </div>
     <div class="container" v-auto-animate>
       <div class="p-4 float-left" v-if="storyResult.data.image">
         <ClientOnly>
@@ -28,9 +30,16 @@
 import type { StoryResult } from "~/type/ChatMessage.type";
 const storyResult = defineModel<StoryResult>();
 
+const debounceTimeout = ref<NodeJS.Timeout | undefined>();
+
 const onContentChange = (event: Event) => {
   const newContent = (event.target as HTMLElement).innerText;
-  if (storyResult.value) storyResult.value.data.content = newContent;
+  clearTimeout(debounceTimeout.value);
+  debounceTimeout.value = setTimeout(() => {
+    if (storyResult.value) {
+      storyResult.value.data.content = newContent;
+    }
+  }, 1500);
 };
 </script>
 

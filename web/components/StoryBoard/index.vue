@@ -1,42 +1,38 @@
 <template>
   <div
     v-if="currentStoryBoard"
-    class="p-4 flex-col flex gap-5 overflow-y-auto h-full"
+    class="overflow-y-auto h-full relative overflow-x-hidden"
   >
-    <div
-      class="opacity-70 text-sm font-bold"
-      v-if="currentStoryBoard.dataExtracted"
-    >
-      故事板
-    </div>
-    <div class="px-2">
-      <StoryBoardSectionExtracted
-        v-if="currentStoryBoard.dataExtracted"
-        v-model="currentStoryBoard.dataExtracted"
-      />
-    </div>
-    <div
-      class="opacity-70 text-sm font-bold"
-      v-if="currentStoryBoard.searchResult"
-    >
-      搜尋結果
-    </div>
-    <div class="px-2">
-      <StoryBoardSectionSearchResult
-        v-if="currentStoryBoard.searchResult"
-        v-model="currentStoryBoard.searchResult"
-      />
-    </div>
+    <ClientOnly>
+      <IBlurReveal :delay="0.1" :duration="0.75">
+        <div class="flex-col flex gap-5 pb-50px pt-2 px-4" v-auto-animate>
+          <div v-if="currentStoryBoard.dataExtracted">
+            <div class="opacity-70 text-sm font-bold">故事板</div>
+            <div class="px-2">
+              <StoryBoardSectionExtracted
+                v-model="currentStoryBoard.dataExtracted"
+              />
+            </div>
+          </div>
+          <div v-if="currentStoryBoard.searchResult?.data.length">
+            <div class="opacity-70 text-sm font-bold">搜尋結果</div>
+            <div class="px-2">
+              <StoryBoardSectionSearchResult
+                v-model="currentStoryBoard.searchResult"
+              />
+            </div>
+          </div>
 
-    <div
-      class="opacity-70 text-sm font-bold"
-      v-if="currentStoryBoard.storyResult"
-    >
-      故事結果
-    </div>
-    <div class="px-2" v-auto-animate v-if="currentStoryBoard.storyResult">
-      <StoryBoardSectionStoryResult v-model="currentStoryBoard.storyResult" />
-    </div>
+          <div v-if="currentStoryBoard.storyResult">
+            <div class="opacity-70 text-sm font-bold">故事結果</div>
+            <div class="px-2">
+              <StoryBoardSectionStoryResult
+                v-model="currentStoryBoard.storyResult"
+              />
+            </div>
+          </div></div
+      ></IBlurReveal>
+    </ClientOnly>
   </div>
 </template>
 
