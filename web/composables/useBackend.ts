@@ -34,9 +34,21 @@ export const useBackend = () => {
   const methods = {
     sendMessage: async (data: {
       messages: ChatMessage[];
-      currentSteps: (DataExtracted | SearchResult | StoryResult)[];
+      currentStoryBoard: {
+        dataExtracted: DataExtracted | null;
+        storyResult: StoryResult | null;
+        searchResult: SearchResult | null;
+      };
     }): Promise<any> => {
-      const response = await sendEvent<any>("message", data);
+      const data_ = {
+        messages: data.messages,
+        currentStoryBoard: {
+          data_extracted: data.currentStoryBoard.dataExtracted,
+          story_result: data.currentStoryBoard.storyResult,
+          search_result: data.currentStoryBoard.searchResult,
+        },
+      };
+      const response = await sendEvent<any>("message", data_);
       return response;
     },
   };
@@ -45,6 +57,15 @@ export const useBackend = () => {
   const on = {
     message: (callback: (message: ChatMessage) => void) => {
       events.message = callback;
+    },
+    storyBoardUpdate: (
+      callback: (data: {
+        content: string;
+        title: string;
+        image: string;
+      }) => void
+    ) => {
+      events.storyBoardUpdate = callback;
     },
   };
 

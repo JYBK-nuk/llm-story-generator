@@ -1,7 +1,7 @@
 <template>
   <Splitter class="h-dvh">
     <SplitterPanel class="flex items-center justify-center" :minSize="20">
-      Panel 1
+      <StoryBoard v-model="currentStoryBoard" />
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
       <div class="flex flex-col h-full">
@@ -32,7 +32,9 @@ const input = ref<string>("");
 const messages = ref<ChatMessage[]>([]);
 const currentStoryBoard = ref({
   id: "",
-  steps: [] as (DataExtracted | SearchResult | StoryResult)[],
+  dataExtracted: null as null | DataExtracted,
+  searchResult: null as null | SearchResult,
+  storyResult: null as null | StoryResult,
 });
 
 const send = async () => {
@@ -45,13 +47,13 @@ const send = async () => {
   });
   messages.value.push({
     type: "bot",
-    content: "dd",
+    content: "",
     id: id,
     steps: [],
   });
   await backend.sendMessage({
     messages: messages.value,
-    currentSteps: currentStoryBoard.value.steps,
+    currentStoryBoard: currentStoryBoard.value,
   });
 };
 
@@ -64,7 +66,37 @@ backend.on.message((message) => {
     return;
   }
   messages.value[index] = message;
-  currentStoryBoard.value.steps = message.steps;
+  message.steps.find((step) => {
+    if (step.type === "extracted") {
+      currentStoryBoard.value.dataExtracted = step;
+    }
+    if (step.type === "searchResult") {
+      currentStoryBoard.value.searchResult = step;
+    }
+    if (step.type === "storyResult") {
+      currentStoryBoard.value.storyResult = step;
+    }
+  });
+});
+
+backend.on.storyBoardUpdate((storyBoard) => {
+  currentStoryBoard.value.storyResult = {
+    type: "storyResult",
+    data: {
+      title:
+        storyBoard.title ||
+        currentStoryBoard.value.storyResult?.data.title ||
+        "",
+      content:
+        storyBoard.content ||
+        currentStoryBoard.value.storyResult?.data.content ||
+        "",
+      image:
+        storyBoard.image ||
+        currentStoryBoard.value.storyResult?.data.image ||
+        "",
+    },
+  };
 });
 </script>
 
