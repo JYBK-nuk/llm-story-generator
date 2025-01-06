@@ -56,15 +56,22 @@ async def handle_message_event(
     # 判斷用戶意圖：創建故事或修改故事
     intent = story_creator.determine_user_intent(user_input)
 
-    # Step 0 - Bot 初始回應
-    response_content = "Hi, I'm a bot. Let's create or revise a story!"
-    response = ChatMessage(
-        id=last_user_message.id,
-        type="bot",
-        content=response_content,
-        steps=[],
-    )
-    await callback(response.model_dump())
+    prompt = f"""
+You are a helpful and friendly bot. Shortly respond to the user input with a positive and affirming tone:
+User Input: "{user_input}"
+"""
+    response_content = ""
+    for chunk in llm.stream(prompt):
+        response_content += chunk.content
+
+        # Step 0 - Bot 初始回應
+        response = ChatMessage(
+            id=last_user_message.id,
+            type="bot",
+            content=response_content,
+            steps=[],
+        )
+        await callback(response.model_dump())
 
     # 根據意圖處理
     if intent == "create":
@@ -88,12 +95,6 @@ async def handle_message_event(
 
         # Step 3: 生成故事
 
-        # await sent_event(
-        #     "storyBoardUpdate",
-        #     StoryBoardUpdate(
-        #         title=generated_story.title,
-        #     ).model_dump(),
-        # )
         title = ""
         for worrd in story_creator.generate_title(extracted_data, search_results):
             title += worrd
