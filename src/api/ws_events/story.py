@@ -82,6 +82,8 @@ async def handle_message_event(
         response.steps.append(DataExtracted(data=extracted_data))
         await callback(response.model_dump())
 
+        current_storyboard.data_extracted = extracted_data
+
         # Step 2: 搜索相關資料
         search_results = story_creator.google_search(extracted_data)
         response.steps.append(
@@ -90,6 +92,8 @@ async def handle_message_event(
             ),
         )
         await callback(response.model_dump())
+
+        current_storyboard.search_result = search_results
 
         # Step 3: 生成故事
 
@@ -137,7 +141,12 @@ async def handle_message_event(
                 ),
             ),
         )
-        await callback(response.model_dump())
+
+        current_storyboard.story_result = StoryResultData(
+            title=title,
+            content=content,
+            image="",
+        )
 
         # Step 3: 為故事生成相關圖片
         image_url = story_creator.generate_image(content)
@@ -145,17 +154,27 @@ async def handle_message_event(
             "storyBoardUpdate",
             StoryBoardUpdate(image=image_url).model_dump(),
         )
+
+        await callback(response.model_dump())
+        current_storyboard.story_result = StoryResultData(
+            title=title,
+            content=content,
+            image=image_url,
+        )
     elif intent == "feedback":
+
         # Step 1: 修訂現有故事
         feedback = user_input
-        previous_story = current_storyboard.content  # 從當前故事板獲取舊故事
-        revised_story = story_revisor.revise_story(previous_story, feedback)
+        previous_story = current_storyboard.story_result  # 從當前故事板獲取舊故事
+        revised_story = ""
+        for word in story_revisor.revise_story(feedback, previous_story):
+            revised_story += word
 
-        # 更新故事板
-        await sent_event(
-            "storyBoardUpdate",
-            StoryBoardUpdate(content=revised_story).model_dump(),
-        )
+            # 更新故事板
+            await sent_event(
+                "storyBoardUpdate",
+                StoryBoardUpdate(content=revised_story).model_dump(),
+            )
 
         revised_img_url = story_creator.generate_image(revised_story)
         await sent_event(
@@ -166,10 +185,10 @@ async def handle_message_event(
         # 最終回應
         response.steps.append(
             StoryResult(
-                data=StoryResult(
-                    title="Revised Story",
+                data=StoryResultData(
+                    title=current_storyboard.story_result.data.title,
                     content=revised_story,
-                    image=current_storyboard.image,
+                    image=revised_img_url,
                 ),
             ),
         )
