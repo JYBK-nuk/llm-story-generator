@@ -36,11 +36,6 @@
     </div>
     <div class="px-2" v-auto-animate v-if="currentStoryBoard.storyResult">
       <StoryBoardSectionStoryResult v-model="currentStoryBoard.storyResult" />
-      {{ currentStoryBoard.storyResult.data }}
-      <StoryBoardSectionImage
-        v-if="currentStoryBoard.storyResult.data.image"
-        :url="currentStoryBoard.storyResult.data.image"
-      />
     </div>
   </div>
 </template>
@@ -61,4 +56,4 @@ const currentStoryBoard = defineModel<{
 }>();
 </script>
 
-<style></style>
+<style scoped></style>

@@ -1,7 +1,6 @@
 <template>
-  <div class="flex justify-center">
-    {{ props.url }}
-    <img :src="props.url" class="max-w-full" />
+  <div>
+    <img :src="props.url" class="w-270px" />
   </div>
 </template>
 

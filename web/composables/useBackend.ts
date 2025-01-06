@@ -31,6 +31,7 @@ export const useBackend = () => {
       }
     });
   };
+
   const methods = {
     sendMessage: async (data: {
       messages: ChatMessage[];

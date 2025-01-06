@@ -1,6 +1,5 @@
 import os
 from collections.abc import Callable
-from pprint import pprint
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -44,14 +43,6 @@ async def handle_message_event(
     """
     current_storyboard = StoryBoard.model_validate(data.get("currentStoryBoard", {}))
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
-
-    # 訊息紀錄
-    print("Messages:")
-    pprint(messages)
-
-    # 當前故事板
-    print("Current Storyboard:")
-    pprint(current_storyboard)
 
     if len(messages) == 0:
         return
@@ -132,22 +123,6 @@ async def handle_message_event(
                 ).model_dump(),
             )
 
-        response.steps.append(
-            StoryResult(
-                data=StoryResultData(
-                    title=title,
-                    content=content,
-                    image="",
-                ),
-            ),
-        )
-
-        current_storyboard.story_result = StoryResultData(
-            title=title,
-            content=content,
-            image="",
-        )
-
         # Step 3: 為故事生成相關圖片
         image_url = story_creator.generate_image(content)
         await sent_event(
@@ -155,14 +130,18 @@ async def handle_message_event(
             StoryBoardUpdate(image=image_url).model_dump(),
         )
 
-        await callback(response.model_dump())
-        current_storyboard.story_result = StoryResultData(
-            title=title,
-            content=content,
-            image=image_url,
+        response.steps.append(
+            StoryResult(
+                data=StoryResultData(
+                    title=title,
+                    content=content,
+                    image=image_url,
+                ),
+            ),
         )
-    elif intent == "feedback":
+        await callback(response.model_dump())
 
+    elif intent == "feedback":
         # Step 1: 修訂現有故事
         feedback = user_input
         previous_story = current_storyboard.story_result  # 從當前故事板獲取舊故事
