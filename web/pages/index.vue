@@ -1,6 +1,6 @@
 <template>
   <Splitter class="h-dvh">
-    <SplitterPanel class="flex items-center justify-center" :minSize="20">
+    <SplitterPanel :minSize="20">
       <StoryBoard v-model="currentStoryBoard" />
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">

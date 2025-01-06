@@ -1,14 +1,22 @@
 <template>
   <div>
     <div class="flex justify-end" v-if="message.type == 'user'">
-      <div class="bg-blue-500 text-white p-2 rounded-lg">
+      <div
+        class="rounded-lg border border-gray-950/[.1] bg-gray-950/[.01] p-2 hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]"
+      >
         {{ message.content }}
       </div>
     </div>
 
     <div class="flex flex-col gap-2" v-else>
-      <div>{{ message.content }}</div>
-      <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2">
+      <div>
+        <p v-if="message.content">{{ message.content }}</p>
+        <Icon v-else name="line-md:loading-twotone-loop" />
+      </div>
+      <div
+        class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2"
+        v-if="message.steps.length"
+      >
         <Icon
           :name="
             statusText == '完成'
