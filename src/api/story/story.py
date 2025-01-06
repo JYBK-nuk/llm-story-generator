@@ -8,7 +8,7 @@ from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-from models.chat_message import DataExtractedData, SearchResultData, StoryResultData
+from models.chat_message import DataExtractedData, SearchResultData
 
 load_dotenv()  # take environment variables from .env.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -356,7 +356,8 @@ Use the following information to write a story title
 {references}
 
 ### Rule:
-Use {details.language}
+Use {details.language}.
+Don't use Markdown syntax.
 
 ### Instructions:
 1. Align with the theme and tone.
@@ -391,14 +392,15 @@ Use the following information to write a compelling {details.genre}:
 {references}
 
 ### Rule:
-Use {details.language}
+Use {details.language}.
+Only include the story content.
 
 ### Instructions:
 1. Align with the theme and tone.
 2. Use key elements in the plot.
 3. Reference factual details but ensure originality.
 
-Generate the story:
+Generate the story :
 """
         for chunk in self.llm.stream(prompt):
             yield (chunk.content)
@@ -409,12 +411,16 @@ class StoryRevisor(BaseStoryProcessor):
     負責修改故事的處理鏈
     """
 
-    def revise_story(self, previous_story: str, feedback: str) -> str:
+    def revise_story(self, previous_story: str, feedback: str) -> Iterable[str]:
         """
         基於反饋修改故事
         """
         prompt = f"""
 The user provided feedback to revise the following story:
+
+### Rule:
+Use the same language as the original story.
+Only include the story content.
 
 ### Story:
 {previous_story}
@@ -425,7 +431,8 @@ The user provided feedback to revise the following story:
 Revise the story based on the feedback, keeping the original tone and theme:
 """
 
-        return self.llm.with_structured_output(StoryResultData).invoke(prompt).content
+        for chunk in self.llm.stream(prompt):
+            yield (chunk.content)
 
 
 if __name__ == "__main__":
