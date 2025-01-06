@@ -1,112 +1,148 @@
-import asyncio
+import os
 from collections.abc import Callable
 from pprint import pprint
 
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+
 import utils.messages
 from api.socketio import ws
-from models.chat_message import (
-    ChatMessage,
-    DataExtracted,
-    DataExtractedData,
-    SearchResult,
-    SearchResultData,
-    StoryResult,
-    StoryResultData,
+from api.story.story import StoryCreator, StoryRevisor
+from models.chat_message import ChatMessage, DataExtracted, SearchResult, StoryResult
+from models.story_board import StoryBoard, StoryBoardUpdate
+
+load_dotenv()  # take environment variables from .env.
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_CX = os.getenv("GOOGLE_CX")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0.7,
+    openai_api_key=OPENAI_API_KEY,
 )
-from models.story_board import StoryBoard
+
+# 初始化 StoryCreator 和 StoryRevisor
+story_creator = StoryCreator(llm)
+story_revisor = StoryRevisor(llm)
 
 
 @ws.register_event("message")
 async def handle_message_event(
-    data: dict, callback: Callable, sent_event: Callable
+    data: dict,
+    callback: Callable,
+    sent_event: Callable,
 ) -> None:
-    current_steps_data = data.get("currentSteps", [])
-    current_steps = []
-    for step in current_steps_data:
-        step_obj = utils.messages.validate_step(step)
-        current_steps.append(step_obj)
-
+    """
+    處理 WebSocket 消息事件，依據用戶意圖生成或修訂故事。
+    """
+    current_storyboard = StoryBoard.model_validate(data.get("currentStoryBoard", {}))
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
 
-    # 訊息紀錄 裡面包含全部 (所以盡量只送 content 給使用者，steps 可能只有近期一兩個要送，也可都不送)
+    # 訊息紀錄
     print("Messages:")
     pprint(messages)
-    # 左半邊目前的畫布 (真正給模型看現在文章內容及參考資料的)
-    print("Current steps:")
-    pprint(current_steps)
+
+    # 當前故事板
+    print("Current Storyboard:")
+    pprint(current_storyboard)
 
     if len(messages) == 0:
         return
+
     last_user_message = utils.messages.get_last_user_message(messages)
     if last_user_message is None:
         return
 
-    user_input = last_user_message.content  # User input
+    user_input = last_user_message.content
 
-    # Step 0 - BotReply
-    response_content = "Hi, I'm a bot."  # LLM reply
+    # 判斷用戶意圖：創建故事或修改故事
+    intent = story_creator.determine_user_intent(user_input)
+
+    # Step 0 - Bot 初始回應
+    response_content = "Hi, I'm a bot. Let's create or revise a story!"
     response = ChatMessage(
-        id=last_user_message.id, type="bot", content=response_content, steps=[]
+        id=last_user_message.id,
+        type="bot",
+        content=response_content,
+        steps=[],
     )
     await callback(response.model_dump())
 
-    # Step 1 - DataExtracted
-    response.steps.append(
-        DataExtracted(
-            data=DataExtractedData(
-                theme="theme",
-                genre="genre",
-                tone="tone",
-                key_elements=["key_elements"],
-                language="language",
+    # 根據意圖處理
+    if intent == "create":
+        # Step 1: 提取故事細節
+        extracted_data = story_creator.extract_story_details(user_input)
+        response.steps.append(DataExtracted(data=extracted_data))
+        await callback(response.model_dump())
+
+        # Step 2: 搜索相關資料
+        search_results = story_creator.google_search(extracted_data)
+        response.steps.append(
+            SearchResult(
+                data=search_results,
             ),
-        ),
-    )
-    await callback(response.model_dump())
+        )
 
-    # Step 2 - SearchResult
-    response.steps.append(
-        SearchResult(
-            data=[
-                SearchResultData(
-                    title="title",
-                    url="url",
-                    description="description",
-                ),
-                SearchResultData(
-                    title="title",
-                    url="url",
-                    description="description",
-                ),
-                SearchResultData(
-                    title="title",
-                    url="url",
-                    description="description",
-                ),
-            ],
-        ),
-    )
-
-    await callback(response.model_dump())
-
-    # Step 3 - StoryResult
-    await sent_event("storyBoardUpdate", StoryBoard(title="title").model_dump())
-
-    for _ in range(100):
-        await asyncio.sleep(0.01)
-        await sent_event("storyBoardUpdate", StoryBoard(content="content").model_dump())
-
-    await sent_event("storyBoardUpdate", StoryBoard(image="image").model_dump())
-
-    # Finally, send the response
-    response.steps.append(
-        StoryResult(
-            data=StoryResultData(
-                title="title",
-                content="content",
-                image="image",
+        # Step 3: 生成故事
+        generated_story = story_creator.generate_story(extracted_data, search_results)
+        response.steps.append(
+            StoryResult(
+                data=generated_story,
             ),
-        ),
-    )
+        )
+        await callback(response.model_dump())
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(
+                title=generated_story.title,
+            ).model_dump(),
+        )
 
-    await callback(response.model_dump())
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(
+                content=generated_story.content,
+            ).model_dump(),
+        )
+
+        # Step 3: 為故事生成相關圖片
+        image_url = story_creator.generate_image(generated_story)
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(image=image_url).model_dump(),
+        )
+    elif intent == "feedback":
+        # Step 1: 修訂現有故事
+        feedback = user_input
+        previous_story = current_storyboard.content  # 從當前故事板獲取舊故事
+        revised_story = story_revisor.revise_story(previous_story, feedback)
+
+        # 更新故事板
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(content=revised_story).model_dump(),
+        )
+
+        revised_img_url = story_creator.generate_image(revised_story)
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(image=revised_img_url).model_dump(),
+        )
+
+        # 最終回應
+        response.steps.append(
+            StoryResult(
+                data=StoryResult(
+                    title="Revised Story",
+                    content=revised_story,
+                    image=current_storyboard.image,
+                ),
+            ),
+        )
+        await callback(response.model_dump())
+
+    else:
+        response_content = "Sorry, I couldn't determine your intent. Please try again."
+        response.content = response_content
+        await callback(response.model_dump())

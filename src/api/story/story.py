@@ -7,7 +7,7 @@ from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-from models.chat_message import DataExtractedData, StoryResultData
+from models.chat_message import DataExtractedData, SearchResultData, StoryResultData
 
 load_dotenv()  # take environment variables from .env.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -229,7 +229,7 @@ Input: "{input_sentence}"
 
         return self.llm.with_structured_output(DataExtractedData).invoke(prompt)
 
-    def google_search(self, query: str, num_results: int = 5) -> list:
+    def google_search(self, details: DataExtractedData, num_results: int = 5) -> list:
         """
         執行 Google 搜索
         """
@@ -247,6 +247,9 @@ Input: "{input_sentence}"
             "https://www.storm.mg/",
         ]
         site_query = " OR ".join([f"site:{s}" for s in site])
+
+        key_elements = " ".join(details.key_elements)
+        query = f"{details.theme} {key_elements}"
         full_query = f"{query} {site_query}"
         params = {
             "key": GOOGLE_API_KEY,
@@ -258,7 +261,35 @@ Input: "{input_sentence}"
         response = requests.get(url, params=params)
         if response.status_code != 200:
             raise Exception(f"Google Search API error: {response.text}")
-        return response.json().get("items", [])
+
+        results = response.json()
+
+        for item in results.get("items", []):
+            title = item.get("title", "")
+            snippet = item.get("snippet", "")
+            link = item.get("link", "")
+            # 嘗試從 metatags 提取 og:description
+            og_description = ""
+            pagemap = item.get("pagemap", {})
+            if "metatags" in pagemap:
+                metatags = pagemap.get("metatags", [{}])[0]
+                og_description = metatags.get("og:description", "")
+        extracted_results = []
+        extracted_results.append(
+            SearchResultData.model_validate(
+                {
+                    "title": title,
+                    "url": item.get("link", ""),
+                    "description": max(
+                        snippet,
+                        og_description,
+                        key=len,
+                    ),
+                },
+            ),
+        )
+
+        return extracted_results
 
     def generate_image(self, story: str) -> str:
         """
@@ -266,7 +297,7 @@ Input: "{input_sentence}"
         """
         prompt = PromptTemplate(
             input_variables=["story"],
-            template="Generate an image description for the following story: {story}",
+            template="Generate a short image description(the length must be less than 1000) for the following story: {story}",
         )
         image_pipeline = prompt | llm
         image_description = image_pipeline.invoke({"story": story}).content
@@ -300,25 +331,25 @@ class StoryCreator(BaseStoryProcessor):
     負責創建新故事的處理鏈
     """
 
-    def generate_story(self, input_sentence: str) -> StoryResultData:
+    def generate_story(
+        self,
+        details: DataExtractedData,
+        search_results: list[SearchResultData],
+    ) -> StoryResultData:
         """
         結合搜索結果生成故事
         """
-        details = self.extract_story_details(input_sentence)
-        key_elements = " ".join(details.key_elements)
-        query = f"{details.theme} {key_elements}"
-        search_results = self.google_search(query)
 
         references = "\n".join(
-            f"- Title: {item.get('title')}\n  Link: {item.get('link')}\n  Description: {item.get('snippet')}"
-            for item in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
+            for result in search_results
         )
 
         prompt = f"""
 Use the following information to write a compelling {details.genre}:
 - **Theme**: {details.theme}
 - **Tone**: {details.tone}
-- **Key Elements**: {key_elements}
+- **Key Elements**: {" ".join(details.key_elements)}
 - **References**:
 {references}
 
@@ -333,7 +364,7 @@ Use {details.language}
 Generate the story:
 """
 
-        return self.llm.with_structured_output(StoryResultData).invoke(prompt).content
+        return self.llm.with_structured_output(StoryResultData).invoke(prompt)
 
 
 class StoryRevisor(BaseStoryProcessor):
@@ -370,7 +401,19 @@ if __name__ == "__main__":
     input_sentence = (
         "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
     )
-    generated_story = story_creator.generate_story(input_sentence)
+
+    # 提取故事細節
+    extracted_data = story_creator.extract_story_details(input_sentence)
+    print("提取的故事細節：")
+    print(extracted_data)
+
+    # 搜索相關資料
+    search_results = story_creator.google_search(extracted_data)
+    print("搜索結果：")
+    print(search_results)
+
+    # 生成故事
+    generated_story = story_creator.generate_story(extracted_data)
     print("生成的故事：")
     print(generated_story)
 
