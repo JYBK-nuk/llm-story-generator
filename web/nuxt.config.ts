@@ -24,7 +24,7 @@ export default defineNuxtConfig({
   modulesDir: ["../node_modules"],
   nitro: {
     devProxy: {
-      "/api": {
+      "/api_": {
         target: "http://localhost:8000/api",
         changeOrigin: true,
         autoRewrite: true,

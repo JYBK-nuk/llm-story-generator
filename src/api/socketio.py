@@ -19,7 +19,10 @@ class SocketServer:
                     print(f"Sending response to event: {event} with data: {response} to sid: {sid}")
                     await self.sio.emit(event, response, to=sid)
 
-                await func(data, callback)
+                async def sent_event(event: str, data: dict[str, Any]) -> None:
+                    await self.sio.emit(event, data, to=sid)
+
+                await func(data, callback, sent_event)
 
             # 註冊事件
             print(f"Registering event: {event}")
