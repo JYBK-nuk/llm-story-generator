@@ -102,14 +102,19 @@ User Input: "{user_input}"
 
 """
     response_content = ""
+
+    updated_history = [*last_user_message.history, user_input]
+    if len(updated_history) > 5:
+        updated_history.pop(0)
+
     for chunk in llm.stream(prompt):
         response_content += chunk.content
 
         # Step 0 - Bot 初始回應
         response = ChatMessage(
             id=last_user_message.id,
+            history=updated_history,
             type="bot",
-            content=response_content,
             steps=[],
         )
         await callback(response.model_dump())
@@ -137,7 +142,11 @@ User Input: "{user_input}"
         # Step 3: 生成故事
 
         title = ""
-        for worrd in story_creator.generate_title(extracted_data, search_results):
+        for worrd in story_creator.generate_title(
+            extracted_data,
+            search_results,
+            response.history,
+        ):
             title += worrd
             await sent_event(
                 "storyBoardUpdate",
@@ -156,7 +165,7 @@ User Input: "{user_input}"
         )
 
         content = ""
-        for word in story_creator.generate_story(extracted_data, search_results):
+        for word in story_creator.generate_story(extracted_data, response.history):
             content += word
             await sent_event(
                 "storyBoardUpdate",
@@ -180,7 +189,8 @@ User Input: "{user_input}"
             await sent_event(
                 "storyBoardUpdate",
                 StoryBoardUpdate(
-                    image=image_url, image_prompt=image_prompt
+                    image=image_url,
+                    image_prompt=image_prompt,
                 ).model_dump(),
             )
 
@@ -192,12 +202,12 @@ User Input: "{user_input}"
                         image=image_url,
                         image_prompt=image_prompt,
                     ),
-                )
+                ),
             )
             await callback(response.model_dump())
         except Exception as e:
             # 捕捉異常，並在回調中返回錯誤訊息
-            error_message = f"An error occurred while generating the image: {str(e)}"
+            error_message = f"An error occurred while generating the image: {e!s}"
             response.steps.append(
                 StoryResult(
                     data=StoryResultData(
@@ -207,7 +217,7 @@ User Input: "{user_input}"
                         image_prompt=None,
                     ),
                     error=error_message,
-                )
+                ),
             )
             await callback(response.model_dump())
 
@@ -275,7 +285,9 @@ User Input: "{user_input}"
 
         # 生成動態 Prompt
         dynamic_prompt = generate_dynamic_prompt(
-            feedback, evaluation_score, previous_story
+            feedback,
+            evaluation_score,
+            previous_story,
         )
         print(dynamic_prompt)
         revised_story = ""
@@ -292,12 +304,15 @@ User Input: "{user_input}"
         await sent_event(
             "storyBoardUpdate",
             StoryBoardUpdate(
-                image=revised_img_url, image_prompt=image_prompt
+                image=revised_img_url,
+                image_prompt=image_prompt,
             ).model_dump(),
         )
 
         score = story_creator.evaluate_content(
-            revised_story, current_storyboard.story_result.data.content, user_input
+            revised_story,
+            current_storyboard.story_result.data.content,
+            user_input,
         )
         print(score)
         await sent_event(

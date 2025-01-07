@@ -22,6 +22,7 @@ class SearchResultData(BaseModel):
 # Model for StoryResult's `data` field
 class StoryResultData(BaseModel):
     title: str = Field(description="The title of the story")
+    bot_content: str
     content: str = Field(description="The generated story content")
     image: str = ""
     image_prompt: str = ""
@@ -52,6 +53,7 @@ StepType = DataExtracted | SearchResult | StoryResult
 
 class ChatMessage(BaseModel):
     id: str
+    history: list[str]  # List of previous messages
     content: str
     type: str  # Either "user" or "bot"
     steps: list[StepType]
