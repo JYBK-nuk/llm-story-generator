@@ -10,6 +10,7 @@ dependencies = [
     "langchain-openai>=0.2.14",
     "nltk>=3.9.1",
     "openai>=1.59.3",
+    "pandas>=2.2.3",
     "pydantic",
     "python-socketio>=5.12.1",
     "sentence-transformers>=3.3.1",
