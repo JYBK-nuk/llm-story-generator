@@ -5,6 +5,23 @@
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
       <div class="flex flex-col h-full">
+        <div class="p-2 flex flex-col gap-1 w-full">
+          <Select
+            v-model="selectedSessionId"
+            :options="sessions"
+            optionLabel="title"
+            optionValue="sid"
+            class="w-full"
+            @value-change="changeSession"
+          />
+          <Button
+            class="w-full"
+            severity="contrast"
+            text
+            @click="changeSession(null)"
+            >新聊天</Button
+          >
+        </div>
         <div class="scroller">
           <div class="scroller-content px-4">
             <ChatMessage
@@ -22,14 +39,21 @@
 </template>
 
 <script lang="ts" setup>
+import { useUrlSearchParams } from "@vueuse/core";
 import type {
   ChatMessage,
   StoryResult,
   SearchResult,
   DataExtracted,
 } from "~/type/ChatMessage.type";
+const sessionsStore = useSessionsStore();
+const params = useUrlSearchParams("history");
 const backend = useBackend();
 const input = ref<string>("");
+
+const sessions = computed(() => sessionsStore.sessions);
+const selectedSessionId = ref<string | null>(null);
+
 const messages = ref<ChatMessage[]>([]);
 const currentStoryBoard = ref({
   id: "",
@@ -37,6 +61,37 @@ const currentStoryBoard = ref({
   searchResult: null as null | SearchResult,
   storyResult: null as null | StoryResult,
 });
+
+onMounted(() => {
+  selectedSessionId.value = params.sid as string;
+  changeSession(selectedSessionId.value);
+});
+
+const changeSession = async (session_id: string | null) => {
+  sessionsStore.init();
+  if (session_id) {
+    selectedSessionId.value = session_id;
+    params.sid = session_id;
+    const session = sessionsStore.getSession(session_id);
+    if (session) {
+      messages.value = session.messages;
+      return;
+    }
+  }
+  const sid = sessionsStore.addSession();
+  params.sid = sid;
+  selectedSessionId.value = sid;
+  messages.value = [];
+};
+
+const resetStoryBoard = () => {
+  currentStoryBoard.value = {
+    id: "",
+    dataExtracted: null,
+    searchResult: null,
+    storyResult: null,
+  };
+};
 
 const send = async () => {
   const id = Math.random().toString(36).substring(7);
@@ -56,17 +111,16 @@ const send = async () => {
     messages: messages.value,
     currentStoryBoard: currentStoryBoard.value,
   });
+  if (selectedSessionId.value) {
+    sessionsStore.updateSession(selectedSessionId.value, messages.value);
+  }
+  input.value = "";
 };
 
 const switchVersion = (
   steps: (DataExtracted | SearchResult | StoryResult)[]
 ) => {
-  currentStoryBoard.value = {
-    id: "",
-    dataExtracted: null,
-    searchResult: null,
-    storyResult: null,
-  };
+  resetStoryBoard();
   nextTick(() => {
     for (const step of steps) {
       if (step.type === "extracted") {
@@ -83,7 +137,6 @@ const switchVersion = (
 };
 
 backend.on.message((message) => {
-  console.log("Updating message", message);
   const index = messages.value.findIndex(
     (m) => m.id === message.id && m.type === "bot"
   );
@@ -102,6 +155,9 @@ backend.on.message((message) => {
       currentStoryBoard.value.storyResult = step;
     }
   });
+  if (selectedSessionId.value) {
+    sessionsStore.updateSession(selectedSessionId.value, messages.value);
+  }
 });
 
 backend.on.storyBoardUpdate((storyBoard) => {

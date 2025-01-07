@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     "@primevue/nuxt-module",
     "@vueuse/motion/nuxt",
     "@formkit/auto-animate/nuxt",
+    "pinia-plugin-persistedstate/nuxt",
   ],
   css: ["@unocss/reset/tailwind-compat.css"],
   primevue: {

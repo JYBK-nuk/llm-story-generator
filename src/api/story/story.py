@@ -224,10 +224,11 @@ Input: "{input_sentence}"
             template="""Determine if the input is for:
 1. Creating a new story.
 2. Providing feedback for an existing story.
+3. Other purposes. like chatting or asking questions.
 
 Input: {user_input}
 
-Answer 'create' or 'feedback'.
+Answer 'create' or 'feedback' or 'other'.
 """,
         )
 
