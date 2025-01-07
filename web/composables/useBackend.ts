@@ -69,7 +69,7 @@ export const useBackend = () => {
           Coherence: number;
           Relevance: number;
           Creativity: number;
-        };
+        } | null;
       }) => void
     ) => {
       events.storyBoardUpdate = callback;

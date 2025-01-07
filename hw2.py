@@ -27,13 +27,13 @@ def get_date_range(start_date, end_date):
     return [start + timedelta(days=i) for i in range(delta.days + 1)]
 
 
-def fetch_day_trading(session, date, commodity_id="TXF"):
+def fetch_day_trading(session, date, commodity_id="TXF") -> str:
     """
     抓取日盤資料。
     """
     url = "https://www.taifex.com.tw/cht/3/futContractsDate"
     payload = {
-        "queryType": "3",
+        "queryType": "1",
         "goDay": "",
         "doQuery": "1",
         "dateaddcnt": "-1",
@@ -45,13 +45,13 @@ def fetch_day_trading(session, date, commodity_id="TXF"):
     return response.text
 
 
-def fetch_night_trading(session, date, commodity_id="EXF"):
+def fetch_night_trading(session, date, commodity_id="EXF") -> str:
     """
     抓取夜盤資料。
     """
     url = "https://www.taifex.com.tw/cht/3/futContractsDateAh"
     payload = {
-        "queryType": "1",
+        "queryType": "3",
         "goDay": "",
         "doQuery": "1",
         "dateaddcnt": "",
@@ -225,7 +225,16 @@ def main():
 
 
 def test():
-    df = pd.read_html()
+    from io import StringIO
+
+    from pytz import timezone
+
+    tz = timezone("Asia/Taipei")
+    html = fetch_day_trading(requests.Session(), datetime.now(tz))
+    # html to StringIO Object
+    html_io = StringIO(html)
+    df = pd.read_html(html_io)[0]
+    df.to_csv("day_trading.csv", index=False, encoding="utf-8-sig")
 
 
 if __name__ == "__main__":

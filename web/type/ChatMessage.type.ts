@@ -35,7 +35,7 @@ export interface StoryResult {
       Coherence: number;
       Relevance: number;
       Creativity: number;
-    };
+    } | null;
     image: string;
     image_prompt: string;
   };
