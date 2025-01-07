@@ -5,6 +5,15 @@
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
       <div class="flex flex-col h-full">
+        <div class="p-2">
+          <Select
+            v-model="selectedSessionId"
+            :options="sessions"
+            optionLabel="title"
+            optionValue="sid"
+            class="w-full"
+          />
+        </div>
         <div class="scroller">
           <div class="scroller-content px-4">
             <ChatMessage
@@ -22,14 +31,21 @@
 </template>
 
 <script lang="ts" setup>
+import { useUrlSearchParams, watchThrottled } from "@vueuse/core";
 import type {
   ChatMessage,
   StoryResult,
   SearchResult,
   DataExtracted,
 } from "~/type/ChatMessage.type";
+const sessionsStore = useSessionsStore();
+const params = useUrlSearchParams("history");
 const backend = useBackend();
 const input = ref<string>("");
+
+const sessions = sessionsStore.sessions;
+const selectedSessionId = ref<string | null>(null);
+
 const messages = ref<ChatMessage[]>([]);
 const currentStoryBoard = ref({
   id: "",
@@ -38,7 +54,53 @@ const currentStoryBoard = ref({
   storyResult: null as null | StoryResult,
 });
 
+onMounted(() => {
+  const session_id = params.sid as string;
+  changeSession(session_id);
+
+  watch(selectedSessionId, (session_id) => {
+    if (!session_id) {
+      return;
+    }
+    params.sid = session_id;
+  });
+});
+
+watchThrottled(
+  messages.value,
+  () => {
+    if (!selectedSessionId.value) {
+      return;
+    }
+    sessionsStore.updateSession(selectedSessionId.value, messages.value);
+  },
+  { throttle: 500, deep: true }
+);
+
+const changeSession = async (session_id: string | null) => {
+  if (session_id) {
+    selectedSessionId.value = session_id;
+    const session = sessionsStore.getSession(session_id);
+    if (session) {
+      messages.value = session.messages;
+      return;
+    }
+  }
+  const sid = sessionsStore.addSession();
+  selectedSessionId.value = sid;
+};
+
+const resetStoryBoard = () => {
+  currentStoryBoard.value = {
+    id: "",
+    dataExtracted: null,
+    searchResult: null,
+    storyResult: null,
+  };
+};
+
 const send = async () => {
+  input.value = "";
   const id = Math.random().toString(36).substring(7);
   messages.value.push({
     type: "user",
@@ -61,12 +123,7 @@ const send = async () => {
 const switchVersion = (
   steps: (DataExtracted | SearchResult | StoryResult)[]
 ) => {
-  currentStoryBoard.value = {
-    id: "",
-    dataExtracted: null,
-    searchResult: null,
-    storyResult: null,
-  };
+  resetStoryBoard();
   nextTick(() => {
     for (const step of steps) {
       if (step.type === "extracted") {

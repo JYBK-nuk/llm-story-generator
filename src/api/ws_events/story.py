@@ -44,6 +44,8 @@ async def handle_message_event(
     current_storyboard = StoryBoard.model_validate(data.get("currentStoryBoard", {}))
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
 
+    print("current_storyboard", current_storyboard)
+
     if len(messages) == 0:
         return
 
@@ -123,6 +125,15 @@ User Input: "{user_input}"
                     content=content,
                 ).model_dump(),
             )
+        result_data = StoryResultData(
+            title=title,
+            content=content,
+        )
+
+        response.steps.append(
+            StoryResult(data=result_data),
+        )
+        await callback(response.model_dump())
 
         # Step 3: 為故事生成相關圖片
         image_url, image_prompt = story_creator.generate_image(content)
@@ -130,17 +141,8 @@ User Input: "{user_input}"
             "storyBoardUpdate",
             StoryBoardUpdate(image=image_url, image_prompt=image_prompt).model_dump(),
         )
-
-        response.steps.append(
-            StoryResult(
-                data=StoryResultData(
-                    title=title,
-                    content=content,
-                    image=image_url,
-                    image_prompt=image_prompt,
-                ),
-            ),
-        )
+        result_data.image = image_url
+        result_data.image_prompt = image_prompt
         await callback(response.model_dump())
 
     elif intent == "feedback":
@@ -175,7 +177,12 @@ User Input: "{user_input}"
             ),
         )
         await callback(response.model_dump())
-
+    elif intent == "other":
+        pass
+        # for chunk in llm.stream(user_input):
+        #     response_content += chunk.content
+        # response.content = response_content
+        # await callback(response.model_dump())
     else:
         response_content = "Sorry, I couldn't determine your intent. Please try again."
         response.content = response_content

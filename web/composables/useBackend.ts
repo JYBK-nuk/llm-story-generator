@@ -53,8 +53,8 @@ export const useBackend = () => {
       return response;
     },
   };
-  const events = {} as Record<string, (data: any) => void>;
 
+  const events = {} as Record<string, (data: any) => void>;
   const on = {
     message: (callback: (message: ChatMessage) => void) => {
       events.message = callback;
