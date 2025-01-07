@@ -9,18 +9,19 @@
           <Select
             v-model="selectedSessionId"
             :options="sessions"
-            optionLabel="title"
-            optionValue="sid"
+            option-value="sid"
+            option-label="title"
             class="w-full"
             @value-change="changeSession"
           />
           <Button
-            class="w-full"
-            severity="contrast"
+            label="+ 新聊天"
+            fluid
+            severity="secondary"
             text
+            size="small"
             @click="changeSession(null)"
-            >新聊天</Button
-          >
+          />
         </div>
         <div class="scroller">
           <div class="scroller-content px-4">
@@ -67,7 +68,11 @@ onMounted(() => {
   changeSession(selectedSessionId.value);
 });
 
-const changeSession = async (session_id: string | null) => {
+const changeSession = async (session_id: string | null | { sid: string }) => {
+  if (typeof session_id != "string" && session_id) {
+    session_id = session_id.sid;
+  }
+
   sessionsStore.init();
   if (session_id) {
     selectedSessionId.value = session_id;
@@ -198,5 +203,9 @@ backend.on.storyBoardUpdate((storyBoard) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.p-select-list-container {
+  max-width: 500px;
 }
 </style>
