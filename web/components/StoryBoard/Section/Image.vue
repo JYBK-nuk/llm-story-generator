@@ -1,7 +1,11 @@
 <template>
   <div>
-    <img :src="props.url" class="w-270px" />
-    {{ props.prompt }}
+    <img
+      :src="props.url"
+      :alt="props.prompt"
+      class="w-270px"
+      :title="props.prompt"
+    />
   </div>
 </template>
 
