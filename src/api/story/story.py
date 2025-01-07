@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from textblob import TextBlob
 
-from models.chat_message import DataExtractedData, SearchResultData
+from models.chat_message import ChatMessage, DataExtractedData, SearchResultData
 
 load_dotenv()  # take environment variables from .env.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -70,6 +70,30 @@ class BaseStoryProcessor:
 
     def __init__(self, llm):
         self.llm = llm
+
+    def clarify_history(self, messages: list[ChatMessage]) -> list[dict[str, str]]:
+        """
+        合併 user 與 bot 的一次對話，並將完整的對話加入到歷史記錄中
+        """
+        history = []
+        temp_pair = {}
+
+        for message in messages:
+            if message.type == "user":
+                temp_pair["user"] = message.content
+            elif message.type == "bot":
+                temp_pair["bot"] = message.content
+
+            # 包含 user 和 bot 時，加入到歷史記錄
+            if "user" in temp_pair and "bot" in temp_pair:
+                history.append(temp_pair)
+                temp_pair = {}
+
+        # 如果 temp_pair 還有未完成的對話（例如只有 user），加入到歷史
+        if temp_pair:
+            history.append(temp_pair)
+
+        return history
 
     def extract_story_details(self, input_sentence: str) -> DataExtractedData:
         """
@@ -227,7 +251,7 @@ Input: "{input_sentence}"
 
 Input: {user_input}
 
-Answer 'create' or 'feedback' or 'other'.
+Answer 'create' or 'feedback'.
 """,
         )
 
@@ -244,7 +268,7 @@ class StoryCreator(BaseStoryProcessor):
         self,
         details: DataExtractedData,
         search_results: list[SearchResultData],
-        history: list[str],
+        history: list[dict[str, str]],
     ) -> Iterable[str]:
         """
         生成故事標題
@@ -263,7 +287,7 @@ Use the following information to write a story title
 - **Key Elements**: {" ".join(details.key_elements)}
 - **References**:
 {references}
-- **History**: the previous messages from the user
+- **History**: the previous messages from the user and bot
 {history}
 
 ### Rule:
@@ -302,7 +326,7 @@ Use the following information to write a compelling {details.genre}:
 - **Key Elements**: {" ".join(details.key_elements)}
 - **References**:
 {references}
-- **History**: the previous messages from the user
+- **History**: the previous messages from the user and bot
 {history}
 
 ### Rule:
@@ -316,6 +340,7 @@ Only include the story content.
 
 Generate the story :
 """
+
         for chunk in self.llm.stream(prompt):
             yield (chunk.content)
 
@@ -329,7 +354,7 @@ class StoryRevisor(BaseStoryProcessor):
         self,
         previous_story: str,
         feedback: str,
-        history: list[str],
+        history: list[dict[str, str]],
     ) -> Iterable[str]:
         """
         基於反饋修改故事
@@ -347,7 +372,7 @@ Only include the story content.
 ### Feedback:
 {feedback}
 
-- **History**: the previous messages from the user
+- **History**: the previous messages from the user and bot
 {history}
 
 ### previous messages

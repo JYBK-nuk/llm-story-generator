@@ -41,11 +41,9 @@ async def handle_message_event(
     """
     處理 WebSocket 消息事件，依據用戶意圖生成或修訂故事。
     """
+
     current_storyboard = StoryBoard.model_validate(data.get("currentStoryBoard", {}))
     messages = [ChatMessage.model_validate(item) for item in data.get("messages", [])]
-
-    print("current_storyboard", current_storyboard)
-
     if len(messages) == 0:
         return
 
@@ -58,6 +56,8 @@ async def handle_message_event(
     # 判斷用戶意圖：創建故事或修改故事
     intent = story_creator.determine_user_intent(user_input)
 
+    # 獲取歷史對話
+    clarified_history = story_creator.clarify_history(messages)
     prompt = f"""
 
 ## **Role Description**
@@ -84,6 +84,11 @@ You are a friendly and supportive assistant. Your primary role is to respond to 
 
 ---
 
+## **The Previous Messages From Fhe User And Bot**
+{clarified_history}
+
+---
+
 ## **Examples**
 
 - **User Input**: “Please generate a story about a time traveler.”  
@@ -102,22 +107,24 @@ User Input: "{user_input}"
 
 """
     response_content = ""
-
-    updated_history = [*last_user_message.history, user_input]
-    if len(updated_history) > 5:
-        updated_history.pop(0)
-
+    response = None
     for chunk in llm.stream(prompt):
         response_content += chunk.content
 
         # Step 0 - Bot 初始回應
         response = ChatMessage(
             id=last_user_message.id,
-            history=updated_history,
             type="bot",
             steps=[],
+            content=response_content,
         )
         await callback(response.model_dump())
+
+    # 合併messages與response
+    messages.pop()
+    history = [*messages, response]
+    clarified_history = story_creator.clarify_history(history)
+    print(f"Clarified History: {clarified_history}")
 
     # 根據意圖處理
     if intent == "create":
@@ -145,7 +152,7 @@ User Input: "{user_input}"
         for worrd in story_creator.generate_title(
             extracted_data,
             search_results,
-            response.history,
+            clarified_history,
         ):
             title += worrd
             await sent_event(
@@ -165,7 +172,11 @@ User Input: "{user_input}"
         )
 
         content = ""
-        for word in story_creator.generate_story(extracted_data, response.history):
+        for word in story_creator.generate_story(
+            extracted_data,
+            search_results,
+            clarified_history,
+        ):
             content += word
             await sent_event(
                 "storyBoardUpdate",
@@ -291,7 +302,7 @@ User Input: "{user_input}"
         )
         print(dynamic_prompt)
         revised_story = ""
-        for word in story_revisor.revise_story(dynamic_prompt, previous_story):
+        for word in story_revisor.revise_story(dynamic_prompt, previous_story, history):
             revised_story += word
 
             # 更新故事板
