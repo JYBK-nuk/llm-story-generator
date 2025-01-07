@@ -187,7 +187,8 @@ backend.on.storyBoardUpdate((storyBoard) => {
         "",
       evaluation_score:
         storyBoard.evaluation_score ||
-        currentStoryBoard.value.storyResult?.data.evaluation_score,
+        currentStoryBoard.value.storyResult?.data.evaluation_score ||
+        null,
     },
   };
 });
