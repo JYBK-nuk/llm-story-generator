@@ -49,5 +49,8 @@ export const useSessionsStore = defineStore("SessionsStore", {
         };
       }),
   },
-  persist: true,
+  persist: {
+    key: "sessions",
+    storage: piniaPluginPersistedstate.localStorage(),
+  },
 });

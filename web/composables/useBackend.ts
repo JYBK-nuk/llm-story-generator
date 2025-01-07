@@ -13,7 +13,6 @@ const socket: Socket = io("http://localhost:8000", {
 
 export const useBackend = () => {
   socket.onAny((event: keyof typeof events, data) => {
-    console.log(`Received event ${event}:`, data);
     events[event]?.(data);
   });
 

@@ -30,6 +30,12 @@ export interface StoryResult {
   data: {
     title: string;
     content: string;
+    evaluation_score: {
+      BLEU: number;
+      Coherence: number;
+      Relevance: number;
+      Creativity: number;
+    };
     image: string;
     image_prompt: string;
   };

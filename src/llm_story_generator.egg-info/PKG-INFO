@@ -4,7 +4,11 @@ Version: 0.1.0
 Requires-Python: ==3.12.4
 Requires-Dist: fastapi
 Requires-Dist: langchain
+Requires-Dist: langchain-community>=0.3.14
+Requires-Dist: langchain-openai>=0.2.14
+Requires-Dist: openai>=1.59.3
 Requires-Dist: pydantic
+Requires-Dist: python-socketio>=5.12.1
 Requires-Dist: uvicorn
 Provides-Extra: dev
 Requires-Dist: ruff; extra == "dev"
