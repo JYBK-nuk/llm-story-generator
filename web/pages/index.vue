@@ -185,6 +185,9 @@ backend.on.storyBoardUpdate((storyBoard) => {
         storyBoard.image_prompt ||
         currentStoryBoard.value.storyResult?.data.image_prompt ||
         "",
+      evaluation_score:
+        storyBoard.evaluation_score ||
+        currentStoryBoard.value.storyResult?.data.evaluation_score,
     },
   };
 });

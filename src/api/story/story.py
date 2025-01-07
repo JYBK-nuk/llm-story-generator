@@ -7,12 +7,11 @@ from fastapi import APIRouter
 from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from transformers import pipeline
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from textblob import TextBlob
-import numpy as np
+
 from models.chat_message import DataExtractedData, SearchResultData
 
 load_dotenv()  # take environment variables from .env.
@@ -154,11 +153,11 @@ Input: "{input_sentence}"
     ) -> dict:
         if not isinstance(generated_text, str):
             raise TypeError(
-                f"Expected generated_text to be a string, got {type(generated_text)}"
+                f"Expected generated_text to be a string, got {type(generated_text)}",
             )
         if not isinstance(reference_text, str):
             raise TypeError(
-                f"Expected reference_text to be a string, got {type(reference_text)}"
+                f"Expected reference_text to be a string, got {type(reference_text)}",
             )
         # BLEU Score (Relevance to Reference Text)
         reference_tokens = [reference_text.split()]
@@ -171,27 +170,19 @@ Input: "{input_sentence}"
         if user_input is not None:
             user_embedding = model.encode([user_input])
             generated_embedding = model.encode([generated_text])
-            coherence_score = (
-                None
-                if user_input is None
-                else cosine_similarity(user_embedding, generated_embedding)[0][0]
-            )
+            coherence_score = None if user_input is None else cosine_similarity(user_embedding, generated_embedding)[0][0]
         else:
             coherence_score = 0
 
         # Relevance (Semantic Similarity with Reference Text)
         reference_embedding = model.encode([reference_text])
         generated_embedding = model.encode([generated_text])
-        relevance_score = cosine_similarity(reference_embedding, generated_embedding)[
-            0
-        ][0]
+        relevance_score = cosine_similarity(reference_embedding, generated_embedding)[0][0]
 
         # Creativity (Sentiment and Diversity)
         sentiment = TextBlob(generated_text).sentiment
         unique_words = len(set(generated_tokens))
-        diversity = (
-            unique_words / len(generated_tokens) if len(generated_tokens) > 0 else 0
-        )
+        diversity = unique_words / len(generated_tokens) if len(generated_tokens) > 0 else 0
 
         return {
             "BLEU": bleu_score,
@@ -251,8 +242,7 @@ class StoryCreator(BaseStoryProcessor):
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
-            for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
         )
 
         prompt = f"""
@@ -288,8 +278,7 @@ Generate the story title:
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
-            for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
         )
 
         prompt = f"""
@@ -351,9 +340,7 @@ if __name__ == "__main__":
 
     # 測試創建新故事
     print("===== 測試創建新故事 =====")
-    input_sentence = (
-        "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
-    )
+    input_sentence = "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
 
     # 提取故事細節
     extracted_data = story_creator.extract_story_details(input_sentence)
