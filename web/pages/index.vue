@@ -157,7 +157,17 @@ backend.on.message((message) => {
       currentStoryBoard.value.searchResult = step;
     }
     if (step.type === "storyResult") {
-      currentStoryBoard.value.storyResult = step;
+      currentStoryBoard.value.storyResult = {
+        type: "storyResult",
+        data: {
+          title: step.data.title,
+          content: step.data.content,
+          image: step.data.image,
+          image_prompt: step.data.image_prompt,
+          evaluation_score:
+            currentStoryBoard.value.storyResult?.data.evaluation_score || null,
+        },
+      };
     }
   });
   if (selectedSessionId.value) {
