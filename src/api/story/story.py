@@ -239,7 +239,7 @@ Use the following information to write a compelling {details.genre}:
 {references}
 
 ### Rule:
-Use {details.language}.
+Use {details.language}
 Only include the story content.
 
 ### Instructions:
@@ -266,7 +266,7 @@ class StoryRevisor(BaseStoryProcessor):
 The user provided feedback to revise the following story:
 
 ### Rule:
-Use the same language as the original story.
+Use the same language as the original story, unless the feedback suggests otherwise.
 Only include the story content.
 
 ### Story:
