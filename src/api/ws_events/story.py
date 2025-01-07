@@ -125,10 +125,58 @@ User Input: "{user_input}"
             )
 
         # Step 3: 為故事生成相關圖片
-        image_url, image_prompt = story_creator.generate_image(content)
+        try:
+            image_url, image_prompt = story_creator.generate_image(content)
+            await sent_event(
+                "storyBoardUpdate",
+                StoryBoardUpdate(
+                    image=image_url, image_prompt=image_prompt
+                ).model_dump(),
+            )
+
+            response.steps.append(
+                StoryResult(
+                    data=StoryResultData(
+                        title=title,
+                        content=content,
+                        image=image_url,
+                        image_prompt=image_prompt,
+                    ),
+                )
+            )
+            await callback(response.model_dump())
+        except Exception as e:
+            # 捕捉異常，並在回調中返回錯誤訊息
+            error_message = f"An error occurred while generating the image: {str(e)}"
+            response.steps.append(
+                StoryResult(
+                    data=StoryResultData(
+                        title=title,
+                        content=content,
+                        image=None,
+                        image_prompt=None,
+                    ),
+                    error=error_message,
+                )
+            )
+            await callback(response.model_dump())
+
+            # 也可以選擇將錯誤記錄到日誌中
+            print(error_message)
+
+            # 評估
+
+        references = "\n".join(
+            f"- Title: {result.title}\n  Snippet: {result.description}"
+            for result in search_results
+        )
+        print(references)
+        print(content)
+        score = story_creator.evaluate_content(content, references, user_input)
+        print(score)
         await sent_event(
             "storyBoardUpdate",
-            StoryBoardUpdate(image=image_url, image_prompt=image_prompt).model_dump(),
+            StoryBoardUpdate(evaluation_score=score).model_dump(),
         )
 
         response.steps.append(
@@ -136,6 +184,7 @@ User Input: "{user_input}"
                 data=StoryResultData(
                     title=title,
                     content=content,
+                    evaluation_score=score,
                     image=image_url,
                     image_prompt=image_prompt,
                 ),
@@ -147,8 +196,39 @@ User Input: "{user_input}"
         # Step 1: 修訂現有故事
         feedback = user_input
         previous_story = current_storyboard.story_result  # 從當前故事板獲取舊故事
+        print(current_storyboard.story_result.data.content)
+        evaluation_score = (
+            current_storyboard.story_result.data.evaluation_score
+        )  # 獲取評估分數
+
+        # Step 2: 根據評估分數和用戶反饋動態調整 Prompt
+        def generate_dynamic_prompt(feedback, evaluation_score, previous_story):
+            prompt = "Please revise the following story to improve it:\n"
+            prompt += f"Current Story:\n{previous_story.data.content}\n\n"
+
+            # 整合用戶反饋
+            if feedback:
+                prompt += f"User Feedback: {feedback}\n\n"
+
+            # 根據評估分數調整
+            if evaluation_score:
+                if evaluation_score["Coherence"] < 0.5:
+                    prompt += "Ensure the story is more coherent and logical.\n"
+                if evaluation_score["Relevance"] < 0.5:
+                    prompt += "Make the story more relevant to the user input.\n"
+                if evaluation_score["Creativity"] < 0.5:
+                    prompt += "Increase the creativity and uniqueness of the story.\n"
+
+            prompt += "\nRevise the story with these improvements in mind:\n"
+            return prompt
+
+        # 生成動態 Prompt
+        dynamic_prompt = generate_dynamic_prompt(
+            feedback, evaluation_score, previous_story
+        )
+        print(dynamic_prompt)
         revised_story = ""
-        for word in story_revisor.revise_story(feedback, previous_story):
+        for word in story_revisor.revise_story(dynamic_prompt, previous_story):
             revised_story += word
 
             # 更新故事板
@@ -160,7 +240,18 @@ User Input: "{user_input}"
         revised_img_url, image_prompt = story_creator.generate_image(revised_story)
         await sent_event(
             "storyBoardUpdate",
-            StoryBoardUpdate(image=revised_img_url, image_prompt=image_prompt).model_dump(),
+            StoryBoardUpdate(
+                image=revised_img_url, image_prompt=image_prompt
+            ).model_dump(),
+        )
+
+        score = story_creator.evaluate_content(
+            revised_story, current_storyboard.story_result.data.content, user_input
+        )
+        print(score)
+        await sent_event(
+            "storyBoardUpdate",
+            StoryBoardUpdate(evaluation_score=score).model_dump(),
         )
 
         # 最終回應
@@ -169,6 +260,7 @@ User Input: "{user_input}"
                 data=StoryResultData(
                     title=current_storyboard.story_result.data.title,
                     content=revised_story,
+                    evaluation_score=score,
                     image=revised_img_url,
                     image_prompt=image_prompt,
                 ),

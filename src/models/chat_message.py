@@ -25,6 +25,10 @@ class StoryResultData(BaseModel):
     content: str = Field(description="The generated story content")
     image: str = ""
     image_prompt: str = ""
+    evaluation_score: dict[str, float] = Field(
+        default_factory=dict,
+        description="Evaluation scores for coherence, creativity, and relevance",
+    )
 
 
 # Define the step models
