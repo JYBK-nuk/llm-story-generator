@@ -5,7 +5,7 @@
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
       <div class="flex flex-col h-full">
-        <div class="p-2">
+        <div class="p-2 flex gap-1">
           <Select
             v-model="selectedSessionId"
             :options="sessions"
@@ -13,6 +13,7 @@
             optionValue="sid"
             class="w-full"
           />
+          <Button severity="contrast" @click="changeSession(null)">+</Button>
         </div>
         <div class="scroller">
           <div class="scroller-content px-4">
@@ -43,7 +44,7 @@ const params = useUrlSearchParams("history");
 const backend = useBackend();
 const input = ref<string>("");
 
-const sessions = sessionsStore.sessions;
+const sessions = computed(() => sessionsStore.sessions);
 const selectedSessionId = ref<string | null>(null);
 
 const messages = ref<ChatMessage[]>([]);
@@ -55,15 +56,8 @@ const currentStoryBoard = ref({
 });
 
 onMounted(() => {
-  const session_id = params.sid as string;
-  changeSession(session_id);
-
-  watch(selectedSessionId, (session_id) => {
-    if (!session_id) {
-      return;
-    }
-    params.sid = session_id;
-  });
+  selectedSessionId.value = params.sid as string;
+  changeSession(selectedSessionId.value);
 });
 
 watchThrottled(
@@ -78,6 +72,7 @@ watchThrottled(
 );
 
 const changeSession = async (session_id: string | null) => {
+  sessionsStore.init();
   if (session_id) {
     selectedSessionId.value = session_id;
     const session = sessionsStore.getSession(session_id);
@@ -87,6 +82,7 @@ const changeSession = async (session_id: string | null) => {
     }
   }
   const sid = sessionsStore.addSession();
+  params.sid = sid;
   selectedSessionId.value = sid;
 };
 
