@@ -12,6 +12,7 @@
             optionLabel="title"
             optionValue="sid"
             class="w-full"
+            @value-change="changeSession"
           />
           <Button severity="contrast" @click="changeSession(null)">+</Button>
         </div>
@@ -96,7 +97,6 @@ const resetStoryBoard = () => {
 };
 
 const send = async () => {
-  input.value = "";
   const id = Math.random().toString(36).substring(7);
   messages.value.push({
     type: "user",
@@ -114,6 +114,7 @@ const send = async () => {
     messages: messages.value,
     currentStoryBoard: currentStoryBoard.value,
   });
+  input.value = "";
 };
 
 const switchVersion = (
