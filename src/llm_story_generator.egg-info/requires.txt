@@ -1,6 +1,10 @@
 fastapi
 langchain
+langchain-community>=0.3.14
+langchain-openai>=0.2.14
+openai>=1.59.3
 pydantic
+python-socketio>=5.12.1
 uvicorn
 
 [dev]
