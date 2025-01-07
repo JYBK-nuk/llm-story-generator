@@ -1,9 +1,18 @@
+import os
 import re
 from datetime import datetime, timedelta
+from io import StringIO
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from pytz import timezone
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def validate_date(date_text):
@@ -33,7 +42,7 @@ def fetch_day_trading(session, date, commodity_id="TXF") -> str:
     """
     url = "https://www.taifex.com.tw/cht/3/futContractsDate"
     payload = {
-        "queryType": "1",
+        "queryType": "3",
         "goDay": "",
         "doQuery": "1",
         "dateaddcnt": "-1",
@@ -225,16 +234,54 @@ def main():
 
 
 def test():
-    from io import StringIO
-
-    from pytz import timezone
-
     tz = timezone("Asia/Taipei")
-    html = fetch_day_trading(requests.Session(), datetime.now(tz))
-    # html to StringIO Object
-    html_io = StringIO(html)
-    df = pd.read_html(html_io)[0]
-    df.to_csv("day_trading.csv", index=False, encoding="utf-8-sig")
+    day_trading_df = pd.read_html(StringIO(fetch_day_trading(requests.Session(), datetime.now(tz))))[0]
+    night_trading_df = pd.read_html(StringIO(fetch_night_trading(requests.Session(), datetime.now(tz))))[0]
+    day_trade_csv = day_trading_df.to_csv()
+    night_trade_csv = night_trading_df.to_csv()
+
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.7,
+        openai_api_key=OPENAI_API_KEY,
+    )
+    data_view_prompt = "\n\n".join(
+        [
+            f"{table['name']} (in CSV format):\n```\n{table['csv']}\n```"
+            for table in [
+                {"name": "Day Trading DataFrame", "csv": day_trade_csv},
+                {"name": "Night Trading DataFrame", "csv": night_trade_csv},
+            ]
+        ],
+    )
+    user_requirement = input("請輸入您的需求，例如需要提取哪些欄位或進行何種轉換：")
+
+    prompt_template = PromptTemplate(
+        input_variables=["raw_csv", "user_requirement"],
+        template=(
+            "You are a Python expert. Your task is to extract the required data "
+            "from the provided CSV content and format it as specified by the user. "
+            "Below is the data:\n\n{raw_csv}\n\n"
+            "The user has the following requirement:\n{user_requirement}\n\n"
+            "Write Python code to achieve this, starting directly with the logic. "
+            "Do not include imports or function definitions. Ensure the code is "
+            "clear, concise, and outputs the transformed data in the required format."
+        ),
+    )
+    agent = prompt_template | llm
+    # print(agent.invoke({"raw_csv": data_view_prompt, "user_requirement": user_requirement}).content)
+
+    # Extracting the relevant columns for "未平倉餘額"
+    print(day_trading_df.columns)
+    day_trading_data = day_trading_df.xs("未平倉餘額", axis=1, level=1)
+
+    # Calculate the total "未平倉餘額" (Open Interest)
+    total_open_interest = day_trading_data.sum(axis=0)
+
+    # Formatting the result as required
+    result = total_open_interest.reset_index()
+    result.columns = ["身份別", "未平倉餘額"]
+    print(result)
 
 
 if __name__ == "__main__":
