@@ -251,7 +251,7 @@ Input: "{input_sentence}"
 
 Input: {user_input}
 
-Answer 'create' or 'feedback'.
+Answer 'create', 'feedback' or 'other'.
 """,
         )
 
