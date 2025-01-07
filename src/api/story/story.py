@@ -170,19 +170,27 @@ Input: "{input_sentence}"
         if user_input is not None:
             user_embedding = model.encode([user_input])
             generated_embedding = model.encode([generated_text])
-            coherence_score = None if user_input is None else cosine_similarity(user_embedding, generated_embedding)[0][0]
+            coherence_score = (
+                None
+                if user_input is None
+                else cosine_similarity(user_embedding, generated_embedding)[0][0]
+            )
         else:
             coherence_score = 0
 
         # Relevance (Semantic Similarity with Reference Text)
         reference_embedding = model.encode([reference_text])
         generated_embedding = model.encode([generated_text])
-        relevance_score = cosine_similarity(reference_embedding, generated_embedding)[0][0]
+        relevance_score = cosine_similarity(reference_embedding, generated_embedding)[
+            0
+        ][0]
 
         # Creativity (Sentiment and Diversity)
         sentiment = TextBlob(generated_text).sentiment
         unique_words = len(set(generated_tokens))
-        diversity = unique_words / len(generated_tokens) if len(generated_tokens) > 0 else 0
+        diversity = (
+            unique_words / len(generated_tokens) if len(generated_tokens) > 0 else 0
+        )
 
         return {
             "BLEU": bleu_score,
@@ -236,13 +244,15 @@ class StoryCreator(BaseStoryProcessor):
         self,
         details: DataExtractedData,
         search_results: list[SearchResultData],
+        history: list[str],
     ) -> Iterable[str]:
         """
         生成故事標題
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
+            for result in search_results
         )
 
         prompt = f"""
@@ -253,6 +263,8 @@ Use the following information to write a story title
 - **Key Elements**: {" ".join(details.key_elements)}
 - **References**:
 {references}
+- **History**: the previous messages from the user
+{history}
 
 ### Rule:
 Use {details.language}.
@@ -272,13 +284,15 @@ Generate the story title:
         self,
         details: DataExtractedData,
         search_results: list[SearchResultData],
+        history: list[str],
     ) -> Iterable[str]:
         """
         結合搜索結果生成故事
         """
 
         references = "\n".join(
-            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}" for result in search_results
+            f"- Title: {result.title}\n  Link: {result.url}\n  Snippet: {result.description}"
+            for result in search_results
         )
 
         prompt = f"""
@@ -288,6 +302,8 @@ Use the following information to write a compelling {details.genre}:
 - **Key Elements**: {" ".join(details.key_elements)}
 - **References**:
 {references}
+- **History**: the previous messages from the user
+{history}
 
 ### Rule:
 Use {details.language}D
@@ -309,7 +325,12 @@ class StoryRevisor(BaseStoryProcessor):
     負責修改故事的處理鏈
     """
 
-    def revise_story(self, previous_story: str, feedback: str) -> Iterable[str]:
+    def revise_story(
+        self,
+        previous_story: str,
+        feedback: str,
+        history: list[str],
+    ) -> Iterable[str]:
         """
         基於反饋修改故事
         """
@@ -326,6 +347,11 @@ Only include the story content.
 ### Feedback:
 {feedback}
 
+- **History**: the previous messages from the user
+{history}
+
+### previous messages
+
 Revise the story based on the feedback, keeping the original tone and theme:
 """
 
@@ -340,7 +366,9 @@ if __name__ == "__main__":
 
     # 測試創建新故事
     print("===== 測試創建新故事 =====")
-    input_sentence = "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
+    input_sentence = (
+        "一名科學家無意中開啟了一扇通往魔法世界的門，徹底改變了現實世界的規則。"
+    )
 
     # 提取故事細節
     extracted_data = story_creator.extract_story_details(input_sentence)
