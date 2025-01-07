@@ -5,16 +5,24 @@
     </SplitterPanel>
     <SplitterPanel :size="10" :minSize="20">
       <div class="flex flex-col h-full">
-        <div class="p-2 flex gap-1">
+        <div class="p-2 flex justify-between gap-1 w-full">
           <Select
             v-model="selectedSessionId"
             :options="sessions"
             optionLabel="title"
             optionValue="sid"
-            class="w-full"
+            class="w-90%"
             @value-change="changeSession"
           />
-          <Button severity="contrast" @click="changeSession(null)">+</Button>
+
+          <div class="w-10%">
+            <Button
+              class="w-full"
+              severity="contrast"
+              @click="changeSession(null)"
+              >+</Button
+            >
+          </div>
         </div>
         <div class="scroller">
           <div class="scroller-content px-4">
