@@ -152,7 +152,7 @@ Input: "{input_sentence}"
         image_pipeline = prompt | llm
         image_description = image_pipeline.invoke({"story": story}).content
         print("Image Description: ", image_description)
-        dalle_wrapper = DallEAPIWrapper()
+        dalle_wrapper = DallEAPIWrapper(model="dall-e-3")
 
         return dalle_wrapper.run(image_description), image_description
 
